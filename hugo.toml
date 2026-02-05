@@ -1,0 +1,4 @@
+baseURL = 'https://nobodyls.github.io/'
+languageCode = 'zh-cn'
+title = 'Nobodyls 的技术日志'
+theme = 'PaperMod'
