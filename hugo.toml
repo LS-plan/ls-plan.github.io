@@ -2,3 +2,31 @@ baseURL = 'https://nobodyls.github.io/'
 languageCode = 'zh-cn'
 title = 'Nobodyls 的技术日志'
 theme = 'PaperMod'
+
+[params]
+    env = "production"
+    # 开启搜索功能
+    ShowReadingTime = true
+    ShowShareButtons = true
+    ShowCodeCopyButtons = true
+    # 首页信息卡片
+    [params.homeInfoParams]
+        Title = "👋 欢迎来到我的技术空间"
+        Content = "专注于 RL Infra、AI 协作与 Windows 开发避坑。这里记录了我从 'Nobody' 到 'Somebody' 的进化过程。"
+
+    # 社交图标配置
+    [[params.socialIcons]]
+        name = "github"
+        url = "https://github.com/LS-plan"
+
+[menu]
+    [[menu.main]]
+        identifier = "posts"
+        name = "📚 文章"
+        url = "/posts/"
+        weight = 10
+    [[menu.main]]
+        identifier = "search"
+        name = "🔍 搜索"
+        url = "/search/"
+        weight = 20

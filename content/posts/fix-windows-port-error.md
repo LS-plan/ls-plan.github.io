@@ -6,9 +6,9 @@ tags: ["Windows", "Python", "Git"]
 categories: ["开发环境"]
 ---
 
-### 问题 1：Flask/LocalSend 报错“以一种访问权限不允许的方式做了一个访问套接字的尝试”
+### 问题 1：Flask等程序报错“以一种访问权限不允许的方式做了一个访问套接字的尝试”
 
-**现象：** 尝试在 5001 或 53317 端口运行应用时失败，报错代码 10013。资源监视器显示端口未被占用。
+**现象：** 尝试在 5001 等端口运行应用时失败，报错代码 10013。资源监视器显示端口未被占用。
 
 **原因：** Windows 的 Hyper-V 或 WinNAT 动态生成了“排除范围”（Excluded Port Range）。虽然没有进程监听，但内核已禁止普通应用申请这些端口。
 
@@ -19,41 +19,10 @@ netsh int ipv4 set dynamicport tcp start=10000 num=55535
 ```
 ---
 
-## 2. 让网站更精致：PaperMod 进阶配置
+### 问题 2：winget 突然失效，“不是内部或外部命令”
 
-打开你博客根目录下的 `hugo.toml`，建议用以下内容覆盖，这会开启搜索、评论区占位和美观的侧边栏：
+**深度发现：** 经过全盘搜索，发现 `winget.exe` 存在于 `%LOCALAPPDATA%\Microsoft\WindowsApps`，但该路径之前在系统的 `%PATH%` 环境变量过长的问题中被我异常删掉了。
 
-```toml
-baseURL = 'https://nobodyls.github.io/'
-languageCode = 'zh-cn'
-title = 'Nobodyls 的技术日志'
-theme = 'PaperMod'
+**解决方案：** 将上述路径手动添加到系统的环境变量 Path 中，即可恢复 `winget` 命令的使用。
 
-[params]
-    env = "production"
-    # 开启搜索功能
-    ShowReadingTime = true
-    ShowShareButtons = true
-    ShowCodeCopyButtons = true
-    # 首页信息卡片
-    [params.homeInfoParams]
-        Title = "👋 欢迎来到我的技术空间"
-        Content = "专注于 RL Infra、AI 协作与 Windows 开发避坑。这里记录了我从 'Nobody' 到 'Somebody' 的进化过程。"
 
-    # 社交图标配置
-    [[params.socialIcons]]
-        name = "github"
-        url = "https://github.com/LS-plan"
-
-[menu]
-    [[menu.main]]
-        identifier = "posts"
-        name = "📚 文章"
-        url = "/posts/"
-        weight = 10
-    [[menu.main]]
-        identifier = "search"
-        name = "🔍 搜索"
-        url = "/search/"
-        weight = 20
-```
