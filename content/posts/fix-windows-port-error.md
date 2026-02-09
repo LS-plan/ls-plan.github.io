@@ -1,5 +1,5 @@
 ---
-title: "解决 Windows 端口被系统保留及 winget 路径丢失的深度复盘"
+title: "[001] 解决 Windows 端口被系统保留及 winget 路径丢失的深度复盘"
 date: 2026-02-05T14:00:00+08:00
 draft: false
 tags: ["Windows", "Python", "Git"]
