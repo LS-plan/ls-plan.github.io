@@ -1,7 +1,10 @@
 ---
 title: "[002] Linux 中 npm 全局命令（如 claude）无法识别的修复方法"
-date: 2026-02-10T09:00:00+08:00
+date: 2026-02-09T09:00:00+08:00
 draft: false
+slug: "fix-linux-npm-global-command-not-found"
+aliases:
+  - "/posts/002-fix-linux-npm-global-command-not-found/"
 tags: ["Linux", "Node.js", "npm", "PATH", "Claude"]
 categories: ["开发环境"]
 ---
