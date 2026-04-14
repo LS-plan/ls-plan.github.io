@@ -9,246 +9,507 @@ tags: ["Claude Code", "Codex", "CC Switch", "ZCF", "Node.js", "Git"]
 categories: ["开发环境"]
 ---
 
-这篇文章按我自己实际更推荐的一条路径来整理：
+这篇文章按 **Windows 用户优先** 的方式重写。
 
-先检查 `Git`、`Node.js`、`npm/npx` 和环境变量是否干净，再安装 `CC Switch（很多人也简称 ccs）` 统一管理配置，然后分别安装 `Claude Code`、`Codex CLI`，最后再用 `ZCF` 补齐初始化工作流、常用 MCP 和提示词模板。
+默认正文只写 **Windows CMD** 的做法；`PowerShell`、`macOS`、`Linux` 都放进折叠块里，需要时再展开看。
 
-这样做的好处是：**先把环境和配置入口统一，再装工具本体，最后做增强**。  
-比起一上来就在 `~/.claude/settings.json`、`~/.codex/config.toml`、系统环境变量之间来回改，稳定得多，也更不容易把自己绕进去。
+我的推荐顺序仍然不变：
+
+1. 先把 `Git`、`Node.js`、`npm/npx`、环境变量理干净
+2. 先装 `CC Switch` 作为统一配置入口
+3. 再装 `Claude Code` 和 `Codex`
+4. 最后用 `ZCF` 做初始化增强
 
 ---
 
-## 零散信息先看这 5 条
+## 零散信息先看这 6 条
 
-如果你只想快速抓重点，先记住下面这 5 条：
-
-1. `Git`、`Node.js 18+`、`npm/npx` 和全局 `PATH` 必须先检查
-2. 同时用 `Claude Code` 和 `Codex` 时，优先装 `CC Switch`
+1. 这篇教程默认以 **Windows CMD** 为推荐命令环境
+2. `Node.js` 建议不要直接把 npm 全局目录丢到默认位置，而是显式配置 `node_global` 和 `node_cache`
 3. `Claude Code` 的 `Base URL` **不带** `/v1`
 4. `Codex` 的 `Base URL` **必须带** `/v1`
-5. `ZCF` 更适合做初始化增强，`CC Switch` 更适合做长期配置管理
+5. 同时用 `Claude Code` 和 `Codex` 时，优先装 `CC Switch`
+6. `ZCF` 更适合做初始化增强，不适合长期承担配置中心
 
 ---
 
-## 一、开始前先检查 Git、Node、npm、PATH 和环境变量
+## 一、先准备 Windows 目录结构
 
-如果这一层没检查干净，后面很容易出现以下问题：
+这一步不要跳。
 
-- `claude` 或 `codex` 安装成功但命令不可用
-- `CC Switch` 切换配置后不生效
-- 明明改了配置文件，CLI 仍然在读旧环境变量
-- `Claude Code` 和 `Codex` 混用了错误的 `Base URL`
+如果你想让后面的 npm 全局安装、命令可执行路径、缓存目录都稳定，最省心的做法是：
 
-### Windows PowerShell 检查命令
+- `Node.js` 安装目录固定在一个你自己可控的位置
+- 在这个目录下面手动建 `node_global`
+- 在这个目录下面手动建 `node_cache`
+- 然后把 npm 的 `prefix` 和 `cache` 都显式指过去
 
-```powershell
-git --version
-node -v
-npm -v
-npx -v
+我建议你用类似这样的目录：
 
-where.exe git
-where.exe node
-where.exe npm
-where.exe npx
-where.exe claude
-where.exe codex
-
-npm config get prefix
-$env:Path -split ";"
-Get-ChildItem Env: | Where-Object { $_.Name -match "ANTHROPIC|OPENAI|CLAUDE|CODEX" } | Sort-Object Name
+```text
+D:\Dev\nodejs
 ```
 
-### macOS / Linux 检查命令
+最终结构建议是：
 
-```bash
+```text
+D:\Dev\nodejs
+D:\Dev\nodejs\node_global
+D:\Dev\nodejs\node_cache
+```
+
+> 截图预留：`Node.js` 安装目录与 `node_global` / `node_cache` 目录结构
+
+### 为什么这样配
+
+这样做有几个直接好处：
+
+- 不依赖系统默认的 `%AppData%\npm`
+- 全局命令目录清晰，排障时一眼能找到
+- 缓存目录独立，不容易和别的 Node 环境搅在一起
+- 迁移机器、备份环境、写教程都更直观
+
+---
+
+## 二、先检查 Git、Node、npm、npx 和环境变量
+
+如果这一层没检查干净，后面最常见的问题就是：
+
+- `claude` 或 `codex` 明明装了，但命令不可用
+- `CC Switch` 切换成功了，CLI 却还在读旧配置
+- npm 全局安装成功，但命令目录没进 `PATH`
+- `Claude Code` 和 `Codex` 的地址格式配反了
+
+### Windows CMD 检查命令
+
+```cmd
 git --version
-node -v
-npm -v
-npx -v
+```
 
-which -a git node npm npx claude codex
+```cmd
+node -v
+```
+
+```cmd
+npm -v
+```
+
+```cmd
+npx -v
+```
+
+```cmd
+where git
+```
+
+```cmd
+where node
+```
+
+```cmd
+where npm
+```
+
+```cmd
+where npx
+```
+
+```cmd
+where claude
+```
+
+```cmd
+where codex
+```
+
+```cmd
 npm config get prefix
-printf '%s\n' "$PATH" | tr ':' '\n'
-env | grep -E 'ANTHROPIC|OPENAI|CLAUDE|CODEX'
+```
+
+```cmd
+npm config get cache
+```
+
+```cmd
+echo %PATH%
+```
+
+```cmd
+set ANTHROPIC
+```
+
+```cmd
+set OPENAI
 ```
 
 ### 你至少要确认这几件事
 
 1. `git` 正常可用
 2. `node`、`npm`、`npx` 正常可用
-3. `Node.js` 至少满足 `18+`
-4. npm 全局安装目录已经在 `PATH` 中
-5. 没有残留的旧环境变量覆盖新配置
+3. `Node.js` 至少是 `18+`
+4. `npm prefix` 和 `npm cache` 已经指向你自己的目录
+5. `PATH` 里已经包含 `node_global`
+6. 系统里没有残留一堆旧的 `ANTHROPIC_*` / `OPENAI_*` 环境变量长期覆盖新配置
 
-### npm 全局命令目录要看哪里
+{{< collapse summary="展开查看 Windows PowerShell 检查命令" >}}
 
-通常是下面这两类：
+```powershell
+git --version
+```
 
-- Windows：`%AppData%\npm`
-- macOS / Linux：`$(npm config get prefix)/bin`
+```powershell
+node -v
+```
 
-如果你已经执行过 `npm install -g ...`，但 `claude` / `codex` 仍然提示找不到命令，优先怀疑的不是包没装上，而是 **全局命令目录没进 PATH**。
+```powershell
+npm -v
+```
 
-### 哪些环境变量最容易互相打架
+```powershell
+npx -v
+```
 
-重点看这些：
+```powershell
+where.exe git
+```
 
-- `ANTHROPIC_BASE_URL`
-- `ANTHROPIC_API_KEY`
-- `OPENAI_API_KEY`
-- `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`
-- `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS`
+```powershell
+where.exe node
+```
 
-其中最关键的一点是：
+```powershell
+where.exe npm
+```
 
-> `Claude Code` 文档明确说明，**系统环境变量的优先级高于 `settings.json` 和 CC Switch 写入的配置**。
+```powershell
+where.exe npx
+```
 
-所以如果你已经准备用 `CC Switch` 统一管理配置，就不要再长期保留一堆同名系统变量。否则你会看到 UI 里已经切换成功，但 CLI 端一直在走旧值。
+```powershell
+where.exe claude
+```
+
+```powershell
+where.exe codex
+```
+
+```powershell
+npm config get prefix
+```
+
+```powershell
+npm config get cache
+```
+
+```powershell
+$env:Path -split ";"
+```
+
+```powershell
+Get-ChildItem Env: | Where-Object { $_.Name -match "ANTHROPIC|OPENAI|CLAUDE|CODEX" } | Sort-Object Name
+```
+
+{{< /collapse >}}
+
+{{< collapse summary="展开查看 macOS 检查命令" >}}
+
+```bash
+git --version
+```
+
+```bash
+node -v
+```
+
+```bash
+npm -v
+```
+
+```bash
+npx -v
+```
+
+```bash
+which -a git
+```
+
+```bash
+which -a node
+```
+
+```bash
+which -a npm
+```
+
+```bash
+which -a npx
+```
+
+```bash
+which -a claude
+```
+
+```bash
+which -a codex
+```
+
+```bash
+npm config get prefix
+```
+
+```bash
+npm config get cache
+```
+
+```bash
+printf '%s\n' "$PATH"
+```
+
+```bash
+env | grep -E 'ANTHROPIC|OPENAI|CLAUDE|CODEX'
+```
+
+{{< /collapse >}}
+
+{{< collapse summary="展开查看 Linux 检查命令" >}}
+
+```bash
+git --version
+```
+
+```bash
+node -v
+```
+
+```bash
+npm -v
+```
+
+```bash
+npx -v
+```
+
+```bash
+which -a git
+```
+
+```bash
+which -a node
+```
+
+```bash
+which -a npm
+```
+
+```bash
+which -a npx
+```
+
+```bash
+which -a claude
+```
+
+```bash
+which -a codex
+```
+
+```bash
+npm config get prefix
+```
+
+```bash
+npm config get cache
+```
+
+```bash
+printf '%s\n' "$PATH"
+```
+
+```bash
+env | grep -E 'ANTHROPIC|OPENAI|CLAUDE|CODEX'
+```
+
+{{< /collapse >}}
 
 ---
 
-## 二、先装 CC Switch（ccs）
+## 三、配置 npm 全局目录和缓存目录
 
-如果你准备同时用 `Claude Code` 和 `Codex`，我非常建议先装 `CC Switch`。
+这是这篇里最重要的 Windows 习惯之一。
 
-原因很简单：它是这套环境里最重要的“配置入口”。  
-文档站默认也推荐先用它统一管理 `Claude Code`、`Codex`、`OpenClaw` 等工具的 API 配置，而不是分别手改不同文件。
+### 1. 先建目录
 
-### 安装方式
+如果目录还没建，先手动建好，或者用 CMD 执行：
 
-#### Windows
+```cmd
+mkdir D:\Dev\nodejs\node_global
+```
 
-前往 Releases 页面下载安装版或便携版：
+```cmd
+mkdir D:\Dev\nodejs\node_cache
+```
+
+### 2. 把 npm 的 prefix 和 cache 指过去
+
+```cmd
+npm config set prefix "D:\Dev\nodejs\node_global"
+```
+
+```cmd
+npm config set cache "D:\Dev\nodejs\node_cache"
+```
+
+### 3. 重新检查是否生效
+
+```cmd
+npm config get prefix
+```
+
+```cmd
+npm config get cache
+```
+
+### 4. 配环境变量
+
+至少要保证下面这几个路径关系是清楚的：
+
+- `NODEJS_HOME=D:\Dev\nodejs`
+- `Path` 中包含 `%NODEJS_HOME%`
+- `Path` 中包含 `%NODEJS_HOME%\node_global`
+
+如果你习惯手动配系统环境变量，我建议最少保留这两条：
+
+```text
+NODEJS_HOME=D:\Dev\nodejs
+Path=%NODEJS_HOME%;%NODEJS_HOME%\node_global
+```
+
+> 截图预留：Windows 环境变量中 `NODEJS_HOME` 与 `Path` 的配置界面
+
+### 5. 为什么不建议继续依赖 `%AppData%\npm`
+
+不是说 `%AppData%\npm` 一定不能用，而是这类路径在下面几种场景里更容易出问题：
+
+- 多版本 Node 混用
+- 你自己后面想迁移安装目录
+- 公司电脑权限限制
+- 写教程、排障、远程协助时路径不直观
+
+这也是为什么我更推荐一开始就把目录显式定下来。
+
+{{< collapse summary="展开查看 PowerShell 版本的 npm 目录配置命令" >}}
+
+```powershell
+New-Item -ItemType Directory -Force -Path "D:\Dev\nodejs\node_global"
+```
+
+```powershell
+New-Item -ItemType Directory -Force -Path "D:\Dev\nodejs\node_cache"
+```
+
+```powershell
+npm config set prefix "D:\Dev\nodejs\node_global"
+```
+
+```powershell
+npm config set cache "D:\Dev\nodejs\node_cache"
+```
+
+{{< /collapse >}}
+
+---
+
+## 四、先装 CC Switch（ccs）
+
+如果你准备同时用 `Claude Code` 和 `Codex`，我仍然建议 **先装 `CC Switch`**。
+
+原因很简单：它更适合做统一配置入口，而不是你手改多个文件来回切。
+
+### Windows 下载
+
+直接去 Releases 页面下载：
 
 - [CC Switch Releases](https://github.com/farion1231/cc-switch/releases)
 
-#### macOS
+> 截图预留：`CC Switch` 下载页与安装后的主界面
 
-```bash
-brew tap farion1231/ccswitch
-brew install --cask cc-switch
-```
+### 为什么推荐先装它
 
-#### Linux
-
-根据 `CC Switch` 仓库 README，Linux 也提供发行包，可从 Releases 下载：
-
-- `.deb`
-- `.rpm`
-- `.AppImage`
-
-### 为什么推荐它作为统一入口
-
-`CC Switch` 的核心价值不是“帮你填一遍 API Key”，而是把原本分散在多个位置的配置统一起来：
+`CC Switch` 的核心价值不是“帮你填个 API Key”，而是把这些配置入口统一起来：
 
 - `Claude Code` → `~/.claude/settings.json`
 - `Codex` → `~/.codex/config.toml` + `~/.codex/auth.json`
-- 其他 CLI / 网关 → 各自配置文件
+- 其他相关工具 → 各自配置文件
 
-而且文档里已经把默认流程写得很明确：
-
-1. 打开 `CC Switch`
-2. 点击“添加配置”
-3. 选择对应框架，比如 `Claude Code` 或 `Codex`
-4. 在预设供应商列表中点击 `Micu`
-5. 填写 `API Key`
-6. 根据渠道决定 `model` 是否需要手动指定
-7. 点击添加或应用，然后重启终端
-
-### 渠道与模型最容易填错的地方
-
-这部分一定要记住：
+### 在 CC Switch 里最容易填错的地方
 
 | 场景 | 分组 | `model` 建议 |
 |------|------|-------------|
 | Claude Code 常规 Claude 渠道 | `vip_1_api` / `vip_1_api_mix` / `vip_1_max*` / `free_2*` | 通常留空 |
 | Codex CLI | `vip_2` | 通常留空，或显式填 `gpt-5.4` |
-| Claude Code 调用 OAI 模型 | `vip_2_cc` | **必须改成 `gpt-5.4` 或其他 GPT 模型** |
+| Claude Code 调用 OAI 模型 | `vip_2_cc` | 必须填 `gpt-5.4` 或其他 GPT 模型 |
 
-也就是说：
-
-- 正常 Claude 渠道下，不要硬填 `claude-sonnet`
-- `vip_2_cc` 不是 Claude 模型池，而是 **让 Claude Code 去跑 OAI 系列模型**
-- 这个场景下继续填 `claude-opus` / `claude-sonnet`，大概率就会报模型不可用或请求失败
-
-### 外接调用再补一条
-
-如果你不是直接用官方 CLI，而是外接到网关、自定义客户端、`OpenClaw` 或其他第三方平台，除了 `Base URL` 和 `API Key`，还要同时确认：
+### 外接时再额外确认两件事
 
 1. 分组选对
 2. `User-Agent` 选对
 
-否则常见报错就是：
+否则你会遇到的常见报错就是：
 
 - `403 block`
 - `403 Forbidden`
 - `Connection blocked`
 
----
-
-## 三、安装 Claude Code
-
-### 标准安装
+{{< collapse summary="展开查看 macOS 安装 CC Switch" >}}
 
 ```bash
+brew tap farion1231/ccswitch
+```
+
+```bash
+brew install --cask cc-switch
+```
+
+{{< /collapse >}}
+
+{{< collapse summary="展开查看 Linux 获取 CC Switch 的方式" >}}
+
+Linux 直接去 Releases 下载对应包即可，通常会看到这些格式：
+
+- `.deb`
+- `.rpm`
+- `.AppImage`
+
+{{< /collapse >}}
+
+---
+
+## 五、安装 Claude Code
+
+### Windows CMD 安装
+
+```cmd
 npm install -g @anthropic-ai/claude-code
 ```
 
-验证：
+### 验证
 
-```bash
+```cmd
 claude --version
 ```
 
-### 其他安装方式
+### 为什么这里仍然优先推荐 npm 安装
 
-文档里还给了几种替代方案：
+因为你前面已经把：
 
-#### macOS / Linux / WSL
+- `Node.js`
+- `node_global`
+- `node_cache`
+- `PATH`
 
-```bash
-curl -fsSL https://claude.ai/install.sh | bash
-```
+都理顺了，所以这时候用 `npm install -g` 反而最稳定。
 
-#### Windows PowerShell
-
-```powershell
-irm https://claude.ai/install.ps1 | iex
-```
-
-#### WinGet
-
-```powershell
-winget install Anthropic.ClaudeCode
-```
-
-#### Homebrew
-
-```bash
-brew install --cask claude-code
-```
-
-不过如果你的目标是和 `Codex` 一起维护，最省事的仍然是 `npm install -g` 这条。
-
-### Claude Code 配置的推荐顺序
-
-推荐顺序只有一句话：
-
-> **优先用 CC Switch 配，手动配置只在排障或高级自定义时再用。**
-
-如果你已经有官方 Claude 账号，文档也明确说了：直接运行 `claude` 登录即可，不一定非要走 API 中转。
-
-### Claude Code 适合什么人
-
-如果你的工作方式更偏下面这些，通常会更喜欢 `Claude Code`：
-
-- 长时间在同一个仓库里持续协作
-- 需要边读代码边改代码边跑命令
-- 希望保留较长的上下文和历史对话
-- 更关注“持续结对编程感”，而不是只做一次性生成
-
-### 手动配置时要记住的关键差异
+### Claude Code 手动配置时要记住的一点
 
 `Claude Code` 的 `Base URL` **不要带 `/v1`**。
 
@@ -263,14 +524,11 @@ brew install --cask claude-code
 }
 ```
 
-配置文件位置通常是：
+常见位置：
 
 - Windows：`C:/Users/<用户名>/.claude/settings.json`
-- macOS / Linux：`~/.claude/settings.json`
 
 ### 国内网络环境建议补充项
-
-文档里专门强调了国内网络下的必做配置，推荐补成这样：
 
 ```json
 {
@@ -284,7 +542,7 @@ brew install --cask claude-code
 }
 ```
 
-如果你用的是 AWS 分组，并遇到带实验性 Beta 参数的 `400` 报错，还可以继续追加：
+如果你走 AWS 分组并遇到带 Beta 参数的 `400`，再加：
 
 ```json
 {
@@ -294,51 +552,78 @@ brew install --cask claude-code
 }
 ```
 
-### Claude Code 这里最重要的几个坑
+### Claude Code 这里最常见的坑
 
-1. `Base URL` 不要写成带 `/v1` 的 OpenAI 风格地址
-2. 如果 `CC Switch` 切换后不生效，先查系统环境变量是否覆盖了它
-3. `skipWebFetchPreflight` 在国内网络下很关键，不配可能直接导致联网功能异常
-4. 不要额外加 `"skipAutoPermissionPrompt": true`，文档明确提到这会影响 `Plan` 模式
+1. `Base URL` 写成了带 `/v1` 的地址
+2. `CC Switch` 已切换，但系统环境变量还在覆盖它
+3. 国内网络没配 `skipWebFetchPreflight`
+4. 额外加了 `"skipAutoPermissionPrompt": true`，影响 `Plan` 模式
+
+> 截图预留：`Claude Code` 在 `CC Switch` 中的配置页
+
+{{< collapse summary="展开查看 Windows PowerShell 安装 Claude Code" >}}
+
+```powershell
+irm https://claude.ai/install.ps1 | iex
+```
+
+{{< /collapse >}}
+
+{{< collapse summary="展开查看 WinGet 安装 Claude Code" >}}
+
+```powershell
+winget install Anthropic.ClaudeCode
+```
+
+{{< /collapse >}}
+
+{{< collapse summary="展开查看 macOS / Linux / WSL 安装 Claude Code" >}}
+
+```bash
+curl -fsSL https://claude.ai/install.sh | bash
+```
+
+{{< /collapse >}}
+
+{{< collapse summary="展开查看 Homebrew 安装 Claude Code" >}}
+
+```bash
+brew install --cask claude-code
+```
+
+{{< /collapse >}}
 
 ---
 
-## 四、安装 Codex CLI
+## 六、安装 Codex
 
-### 标准安装
+### Windows CMD 安装
 
-```bash
+```cmd
 npm install -g @openai/codex
 ```
 
-验证：
+### 验证
 
-```bash
+```cmd
 codex --version
 ```
 
 ### Codex 配置的默认做法
 
-和 `Claude Code` 一样，默认还是先走 `CC Switch`：
+和 `Claude Code` 一样，默认还是优先走 `CC Switch`：
 
 1. 打开 `CC Switch`
 2. 框架选择 `Codex`
-3. 点击“添加配置”
-4. 预设供应商选择 `Micu`
+3. 添加配置
+4. 选择供应商
 5. 填写 `API Key`
 6. `model` 推荐填 `gpt-5.4`
 7. 应用后重启终端
 
-文档说明 `CC Switch` 会自动写入：
-
-- `~/.codex/config.toml`
-- `~/.codex/auth.json`
-
-### Codex 和 Claude Code 的最大配置差异
+### Codex 和 Claude Code 最大的配置差异
 
 `Codex` 的 `Base URL` **需要带 `/v1`**。
-
-这和 `Claude Code` 正好相反。
 
 ### 手动配置示例
 
@@ -346,16 +631,45 @@ codex --version
 
 ```toml
 model_provider = "micu"
-model = "gpt-5.4"
-model_reasoning_effort = "high"
-disable_response_storage = true
+```
 
+```toml
+model = "gpt-5.4"
+```
+
+```toml
+model_reasoning_effort = "high"
+```
+
+```toml
+disable_response_storage = true
+```
+
+```toml
 [model_providers.micu]
+```
+
+```toml
 name = "micu"
+```
+
+```toml
 base_url = "https://www.openclaudecode.cn/v1"
+```
+
+```toml
 wire_api = "responses"
+```
+
+```toml
 requires_openai_auth = true
+```
+
+```toml
 model_context_window = 1000000
+```
+
+```toml
 model_auto_compact_token_limit = 9000000
 ```
 
@@ -369,30 +683,25 @@ model_auto_compact_token_limit = 9000000
 
 常见位置：
 
-- Windows：`C:/Users/<用户名>/.codex/config.toml`、`C:/Users/<用户名>/.codex/auth.json`
-- macOS / Linux：`~/.codex/config.toml`、`~/.codex/auth.json`
+- Windows：`C:/Users/<用户名>/.codex/config.toml`
+- Windows：`C:/Users/<用户名>/.codex/auth.json`
 
 ### 推理深度怎么选
 
-`Codex` 的一个核心配置是 `model_reasoning_effort`：
-
 | 值 | 速度 | 适用场景 |
 |------|------|---------|
-| `low` | 快 | 小修改、快速问答、轻量生成 |
+| `low` | 快 | 小修改、快速问答 |
 | `medium` | 中 | 日常开发默认值 |
-| `high` | 慢 | 复杂重构、架构设计、长链路问题 |
-
-如果你第一次用 `Codex`，建议直接从 `medium` 起步。  
-只有在明确感觉推理深度不够时，再切到 `high`。
+| `high` | 慢 | 复杂重构、深度分析 |
 
 ### Codex 常见坑
 
-1. `Base URL` 少了 `/v1`
+1. `Base URL` 漏了 `/v1`
 2. `OPENAI_API_KEY` 没写进 `auth.json`
-3. 外接场景没配对 `vip_2` 分组
-4. 第三方接入时缺少 `Codex` 对应的 `User-Agent`
+3. 外接时分组选错
+4. 第三方接入时 `User-Agent` 没配对
 
-文档给出的 `User-Agent` 例子是：
+如果你走第三方外接，文档里常见的 `User-Agent` 例子是：
 
 ```json
 {
@@ -401,66 +710,63 @@ model_auto_compact_token_limit = 9000000
 }
 ```
 
-如果是直接用 `Codex CLI` 本体，通常不需要你手动去写这一层；  
-但如果你接的是第三方平台、网关或者自定义客户端，就必须检查。
+> 截图预留：`Codex` 在 `CC Switch` 中的配置页
 
 ---
 
-## 五、安装和使用 ZCF
+## 七、安装和使用 ZCF
 
-`ZCF` 在文档站里被定位成“零配置初始化工具”，适合快速完成 `Claude Code` 初始化，包括：
+`ZCF` 更适合做：
 
-- 常用 MCP 服务器配置
-- 提示词模板设置
-- 首次环境整理
+- 首次初始化
+- MCP 配置补齐
+- 工作流模板补齐
+- 中文环境下的快速整理
 
-而它在 GitHub README 中还进一步写明，目标是做 **Claude Code & Codex 的零配置一键初始化**。
+但我不建议让它长期承担“唯一配置中心”的角色。
 
 ### 最简单的启动方式
 
-```bash
+```cmd
 npx zcf
 ```
 
-这会直接进入交互菜单。
-
 ### 常用命令
 
-```bash
+```cmd
 npx zcf i
+```
+
+```cmd
 npx zcf u
+```
+
+```cmd
 npx zcf --lang zh-CN
 ```
 
 它们分别对应：
 
-- `npx zcf i`：完整初始化，包含安装、工作流、API/CCR、MCP
-- `npx zcf u`：只更新工作流
+- `npx zcf i`：完整初始化
+- `npx zcf u`：更新工作流
 - `npx zcf --lang zh-CN`：切换界面语言
 
 README 里还给了一个非交互示例：
 
-```bash
+```cmd
 npx zcf i -s -p 302ai -k "sk-xxx"
 ```
 
-### 我更建议的使用姿势
-
-如果你已经用 `CC Switch` 管理 API 和模型，不要让 `ZCF` 再去承担“长期 API 配置中心”的角色。  
-更合理的分工是：
+### 更合理的分工
 
 - `CC Switch`：负责 API、模型、配置切换
-- `ZCF`：负责初始化工作流、MCP、模板、首次环境整理
-
-也就是说，`ZCF` 更像“首装加速器”，`CC Switch` 更像“日常控制台”。
+- `ZCF`：负责初始化工作流、MCP、模板、首次整理
 
 ---
 
-## 六、Claude Code 和 Codex 到底怎么分工
+## 八、Claude Code 和 Codex 怎么分工
 
-很多人第一次装完这两个工具后，最容易卡住的问题不是“怎么配置”，而是“以后到底该先用哪个”。
-
-可以先按这张表理解：
+先用这张表记忆最省事：
 
 | 维度 | Claude Code | Codex |
 |------|-------------|-------|
@@ -470,143 +776,63 @@ npx zcf i -s -p 302ai -k "sk-xxx"
 | 关键配置点 | `settings.json` / 环境变量 | `config.toml` / `auth.json` |
 | Base URL | 不带 `/v1` | 必须带 `/v1` |
 
-如果你不想想太多，也可以先用这个简单规则：
+如果你不想想太多，可以先用这个简单规则：
 
 - 需要长期在项目里边看边改边追踪上下文，先用 `Claude Code`
-- 需要更明确地控制推理深度，或者想让模型更认真地“想一轮再答”，先用 `Codex`
+- 需要显式控制推理深度、做复杂分析或重构，先用 `Codex`
 
 ---
 
-## 七、Claude Code 的使用
+## 九、Windows 场景下的推荐落地顺序
 
-### 启动
-
-```bash
-claude
-```
-
-### 常用命令
-
-| 命令 | 作用 |
-|------|------|
-| `/model` | 切换模型 |
-| `/model sonnet[1m]` | 切换 1M 上下文版本 |
-| `/cost` | 查看当前令牌消耗 |
-| `/compact` | 压缩上下文 |
-| `/resume` | 恢复历史对话 |
-| `/clear` | 清空当前会话 |
-
-### 模型怎么选
-
-| 模型 | 适用场景 |
-|------|---------|
-| `claude-opus` | 复杂任务、难问题、质量优先 |
-| `claude-sonnet` | 日常开发主力，推荐默认使用 |
-| `claude-haiku` | 轻量场景，部分工具链会自动切换 |
-
-如果你当前使用的是 `vip_2_cc` 渠道，那就别再按 Claude 模型名思考了。  
-这个时候 `Claude Code` 实际走的是 OAI 模型，应当在 `CC Switch` 里改成 `gpt-5.4` 这类 GPT 模型。
-
-### 我自己的建议
-
-日常开发里，`Claude Code` 更适合：
-
-- 长会话持续协作
-- 读仓库、改代码、跑命令一体化
-- 需要频繁压缩上下文和恢复历史对话的任务
-
-如果你想把项目背景长期喂给它，可以再配合 `CLAUDE.md`、MCP 和状态栏工具一起用。
-
----
-
-## 八、Codex 的使用
-
-### 启动
-
-```bash
-codex
-```
-
-### 最先调的不是 prompt，而是推理深度
-
-和 `Claude Code` 相比，`Codex` 文档里最值得关注的不是一堆子命令，而是 `model_reasoning_effort`。
-
-建议这样理解：
-
-- `low`：像“快速副驾”，适合小任务和快速验证
-- `medium`：最均衡，适合作为默认档位
-- `high`：像“深度审稿人”，适合复杂问题和重构
-
-### 一套实用默认值
-
-如果你不知道怎么选，可以直接用这一套：
-
-```toml
-model = "gpt-5.4"
-model_reasoning_effort = "medium"
-disable_response_storage = true
-```
-
-然后按任务难度再调。
-
-### Codex 更适合什么场景
-
-在这套组合里，我更倾向于这样分工：
-
-- `Claude Code`：长链路协作、仓库内持续工作
-- `Codex`：复杂推理、重构、方案比较、需要显式控制推理深度的任务
-
-它们不是互斥关系，而是能互补。
-
----
-
-## 九、常见排障顺序
-
-如果你已经按教程装完，但命令还是不工作，建议按下面顺序排查，不要一上来就重装：
-
-1. 先执行 `where.exe claude` / `where.exe codex` 或 `which -a claude codex`
-2. 再检查 `npm config get prefix` 对应目录是否已进入 `PATH`
-3. 再检查系统里是否残留 `ANTHROPIC_*` / `OPENAI_*` 环境变量覆盖 `CC Switch`
-4. 再核对 `Claude Code` 是否误写成带 `/v1` 的地址
-5. 再核对 `Codex` 是否漏写了 `/v1`
-6. 如果是第三方外接，最后再查分组和 `User-Agent`
-
-这个顺序的好处是遵循 `KISS`：
-
-- 先排查最常见、最便宜的问题
-- 再排查配置覆盖
-- 最后才考虑复杂的外接调用场景
-
----
-
-## 十、一条最省心的落地顺序
-
-如果你今天就是想从 0 到 1 配起来，最省心的顺序就是：
+如果你今天就是从 0 到 1 配起来，我建议你按这个顺序走：
 
 1. 安装 `Git`
 2. 安装 `Node.js 18+`
-3. 检查 `npm` 全局路径和 `PATH`
-4. 清理旧的 `ANTHROPIC_*` / `OPENAI_*` 环境变量
-5. 安装 `CC Switch`
-6. 用 `CC Switch` 先把 `Claude Code` 和 `Codex` 的配置都配好
-7. 执行 `npm install -g @anthropic-ai/claude-code`
-8. 执行 `npm install -g @openai/codex`
-9. 执行 `npx zcf` 做初始化增强
-10. 分别启动 `claude` 和 `codex` 验证
+3. 在 Node 安装目录下新建 `node_global` 和 `node_cache`
+4. 用 `npm config set prefix` 和 `npm config set cache` 指过去
+5. 配置 `NODEJS_HOME` 和 `Path`
+6. 清理旧的 `ANTHROPIC_*` / `OPENAI_*` 环境变量
+7. 安装 `CC Switch`
+8. 用 `CC Switch` 先把 `Claude Code` 和 `Codex` 配好
+9. 安装 `Claude Code`
+10. 安装 `Codex`
+11. 执行 `npx zcf` 做初始化增强
+12. 分别验证 `claude` 和 `codex`
 
-对应的最小命令集如下：
+### 对应最小命令集
 
-```bash
+```cmd
+npm config set prefix "D:\Dev\nodejs\node_global"
+```
+
+```cmd
+npm config set cache "D:\Dev\nodejs\node_cache"
+```
+
+```cmd
 npm install -g @anthropic-ai/claude-code
+```
+
+```cmd
 npm install -g @openai/codex
+```
+
+```cmd
 claude --version
+```
+
+```cmd
 codex --version
+```
+
+```cmd
 npx zcf
 ```
 
 ---
 
-## 十一、参考来源
+## 十、参考来源
 
 - [Claude Code 快速上手](https://docs.openclaudecode.cn/#/claude-code)
 - [Claude Code 配置参考](https://docs.openclaudecode.cn/#/claude-code/config)
