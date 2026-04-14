@@ -1,0 +1,124 @@
+:root {
+    --post-layout-width: 1220px;
+    --post-sidebar-width: 260px;
+}
+
+body:not(.list) .main {
+    max-width: calc(var(--post-layout-width) + var(--gap) * 2);
+}
+
+.post-layout {
+    width: 100%;
+    max-width: var(--post-layout-width);
+    margin: 0 auto;
+}
+
+.post-layout--with-toc {
+    display: grid;
+    grid-template-columns: minmax(220px, var(--post-sidebar-width)) minmax(0, 1fr);
+    gap: 32px;
+    align-items: start;
+}
+
+.post-layout--with-toc .post-single {
+    min-width: 0;
+}
+
+.post-sidebar-inner {
+    position: sticky;
+    top: 24px;
+}
+
+.article-toc {
+    padding: 18px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--code-bg);
+}
+
+[data-theme="dark"] .article-toc {
+    background: var(--entry);
+}
+
+.article-toc-title {
+    margin-bottom: 12px;
+    color: var(--secondary);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.article-toc-body {
+    max-height: calc(100vh - 72px);
+    overflow: auto;
+    padding-inline-end: 4px;
+}
+
+.article-toc-body ul {
+    margin: 0;
+    padding-inline-start: 0;
+    list-style: none;
+}
+
+.article-toc-body ul ul {
+    margin-top: 4px;
+    padding-inline-start: 14px;
+    border-inline-start: 1px solid var(--border);
+}
+
+.article-toc-body li {
+    margin: 0;
+}
+
+.article-toc-body a {
+    display: block;
+    padding: 6px 0;
+    color: var(--secondary);
+    box-shadow: none;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.article-toc-body a:hover {
+    color: var(--primary);
+    transform: translateX(2px);
+}
+
+.post-content h1,
+.post-content h2,
+.post-content h3,
+.post-content h4,
+.post-content h5,
+.post-content h6 {
+    scroll-margin-top: 24px;
+}
+
+@media screen and (max-width: 1024px) {
+    .post-layout--with-toc {
+        grid-template-columns: 220px minmax(0, 1fr);
+        gap: 24px;
+    }
+}
+
+@media screen and (max-width: 900px) {
+    body:not(.list) .main {
+        max-width: calc(var(--post-layout-width) + var(--gap) * 2);
+    }
+
+    .post-layout--with-toc {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .post-sidebar {
+        order: -1;
+    }
+
+    .post-sidebar-inner {
+        position: static;
+    }
+
+    .article-toc-body {
+        max-height: none;
+    }
+}

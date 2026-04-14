@@ -1,2 +1,3 @@
 public/**
 .tools/
+.hugo-build-check/
