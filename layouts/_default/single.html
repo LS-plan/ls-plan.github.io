@@ -3,7 +3,7 @@
 {{- $headers := findRE "<h[1-6].*?>(.|\n])+?</h[1-6]>" .Content -}}
 {{- $hasArticleToc := and (.Param "ShowToc") (ge (len $headers) 1) -}}
 
-<div class="post-layout{{- if $hasArticleToc }} post-layout--with-toc{{- end }}">
+<div class="post-layout{{- if $hasArticleToc }} post-layout--with-toc post-layout--viewport{{- end }}">
   {{- if $hasArticleToc }}
   <aside class="post-sidebar" aria-label="目录">
     <div class="post-sidebar-inner">
@@ -45,6 +45,7 @@
 
     {{- if .Content }}
     <div class="post-content">
+      <div class="post-heading-stack" aria-label="当前标题路径"></div>
       {{- if not (.Param "disableAnchoredHeadings") }}
       {{- partial "anchored_headings.html" .Content -}}
       {{- else }}{{ .Content }}{{ end }}

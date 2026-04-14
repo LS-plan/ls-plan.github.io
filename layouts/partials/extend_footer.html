@@ -1,0 +1,119 @@
+<script>
+(() => {
+    const layout = document.querySelector(".post-layout--viewport");
+    if (!layout) {
+        return;
+    }
+
+    const scroller = layout.querySelector(".post-single");
+    const headingStack = layout.querySelector(".post-heading-stack");
+    const headings = Array.from(
+        layout.querySelectorAll(".post-content h1[id], .post-content h2[id], .post-content h3[id], .post-content h4[id], .post-content h5[id], .post-content h6[id]")
+    );
+    const tocLinks = Array.from(layout.querySelectorAll(".article-toc-body a[href^='#']"));
+
+    if (!scroller || !headingStack || headings.length === 0) {
+        return;
+    }
+
+    const tocMap = new Map(
+        tocLinks.map((link) => [decodeURIComponent(link.getAttribute("href").slice(1)), link])
+    );
+
+    const getHeadingTop = (heading) => {
+        const scrollerRect = scroller.getBoundingClientRect();
+        const headingRect = heading.getBoundingClientRect();
+
+        return headingRect.top - scrollerRect.top + scroller.scrollTop;
+    };
+
+    let lastTrailKey = "";
+    let lastActiveId = "";
+
+    const renderStack = (trail) => {
+        const trailKey = trail.map((heading) => heading.id).join("|");
+        if (trailKey === lastTrailKey) {
+            return;
+        }
+
+        lastTrailKey = trailKey;
+        headingStack.replaceChildren();
+
+        if (trail.length === 0) {
+            headingStack.classList.remove("is-visible");
+            return;
+        }
+
+        const fragment = document.createDocumentFragment();
+
+        trail.forEach((heading) => {
+            const item = document.createElement("a");
+            const level = Number(heading.tagName.slice(1));
+
+            item.className = "post-heading-stack-item";
+            item.dataset.level = String(level);
+            item.href = `#${encodeURIComponent(heading.id)}`;
+            item.textContent = heading.textContent.replace(/#$/u, "").trim();
+
+            fragment.appendChild(item);
+        });
+
+        headingStack.appendChild(fragment);
+        headingStack.classList.add("is-visible");
+    };
+
+    const syncState = () => {
+        const threshold = scroller.scrollTop + 12;
+        const trail = Array(6).fill(null);
+        let activeHeading = headings[0];
+        let found = false;
+
+        for (const heading of headings) {
+            const top = getHeadingTop(heading);
+
+            if (top > threshold) {
+                break;
+            }
+
+            found = true;
+            activeHeading = heading;
+
+            const level = Number(heading.tagName.slice(1));
+            trail[level - 1] = heading;
+
+            for (let index = level; index < trail.length; index += 1) {
+                trail[index] = null;
+            }
+        }
+
+        const activeTrail = found ? trail.filter(Boolean) : [headings[0]];
+        renderStack(activeTrail);
+
+        tocLinks.forEach((link) => link.classList.remove("is-active"));
+
+        const activeLink = tocMap.get(activeHeading.id);
+        if (activeLink && activeHeading.id !== lastActiveId) {
+            lastActiveId = activeHeading.id;
+            activeLink.classList.add("is-active");
+            activeLink.scrollIntoView({ block: "nearest" });
+        }
+    };
+
+    let ticking = false;
+    const onScroll = () => {
+        if (ticking) {
+            return;
+        }
+
+        ticking = true;
+        window.requestAnimationFrame(() => {
+            syncState();
+            ticking = false;
+        });
+    };
+
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    syncState();
+})();
+</script>
