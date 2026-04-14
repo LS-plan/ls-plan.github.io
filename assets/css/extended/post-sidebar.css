@@ -1,5 +1,5 @@
 :root {
-    --post-layout-width: 1220px;
+    --post-layout-width: min(80vw, 1520px);
     --post-sidebar-width: 260px;
     --post-stack-offset: 112px;
 }
