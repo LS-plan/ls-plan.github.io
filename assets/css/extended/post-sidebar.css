@@ -1,5 +1,5 @@
 :root {
-    --post-layout-width: min(80vw, 1520px);
+    --post-layout-width: 80vw;
     --post-sidebar-width: 260px;
     --post-stack-offset: 112px;
 }
@@ -217,6 +217,7 @@ body:not(.list) .main {
     }
 
     .post-layout--viewport {
+        width: var(--post-layout-width);
         height: 100%;
         max-width: var(--post-layout-width);
     }
