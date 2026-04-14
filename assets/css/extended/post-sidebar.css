@@ -1,7 +1,8 @@
 :root {
     --post-layout-width: 80vw;
-    --post-sidebar-width: 260px;
+    --post-sidebar-width: 390px;
     --post-stack-offset: 112px;
+    --post-code-block-width: min(100%, 760px);
 }
 
 body:not(.list) .main {
@@ -159,6 +160,18 @@ body:not(.list) .main {
     scroll-margin-top: var(--post-stack-offset);
 }
 
+.post-layout--viewport .post-content .highlight:not(table),
+.post-layout--viewport .post-content > pre {
+    width: fit-content;
+    max-width: var(--post-code-block-width);
+    margin: 10px 0;
+}
+
+.post-layout--viewport .post-content .highlight pre,
+.post-layout--viewport .post-content > pre {
+    overflow-x: auto;
+}
+
 @media screen and (max-width: 1024px) {
     .post-layout--with-toc {
         grid-template-columns: 220px minmax(0, 1fr);
@@ -203,6 +216,10 @@ body:not(.list) .main {
         border-bottom: 1px solid var(--border);
     }
 
+    body:has(.post-layout--viewport) .nav {
+        max-width: min(90vw, 1536px);
+    }
+
     body:has(.post-layout--viewport) .main {
         display: flex;
         height: calc(100vh - var(--header-height));
@@ -223,7 +240,7 @@ body:not(.list) .main {
     }
 
     .post-layout--viewport.post-layout--with-toc {
-        grid-template-columns: minmax(240px, var(--post-sidebar-width)) minmax(0, 1fr);
+        grid-template-columns: minmax(320px, var(--post-sidebar-width)) minmax(0, 1fr);
         gap: 24px;
         align-items: stretch;
     }
