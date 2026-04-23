@@ -5,7 +5,7 @@ draft: false
 slug: "005-nobodyls-cn-caddy-portal-reverse-proxy"
 aliases:
   - "/posts/nobodyls-cn-caddy-portal-reverse-proxy/"
-tags: ["Caddy", "DNS", "Reverse Proxy", "GitHub Pages", "Server", "DevOps"]
+tags: ["Caddy", "DNS", "Reverse Proxy", "GitHub Pages", "Server", "DevOps", "经验压缩", "知识管理"]
 categories: ["运维部署"]
 ---
 
@@ -588,6 +588,8 @@ http://<server-ip>:12345
 这就从“我修好了一个网站”变成了“我理解了一类部署问题”。
 
 我觉得这种写博客的方式，本质上是在给未来的自己写调试手册。它不是炫技，而是把今天的上下文、误区、判断路径和最终模型保存下来。过几个月再遇到类似问题时，你不需要重新把脑子烧一遍。
+
+> 延伸阅读：这篇之后，我又专门写了一篇关于“经验压缩”和 AI 长期记忆的分析：[[007] 从单次感知到经验压缩：AI 工具如何把一次会话变成可复用记忆](/posts/007-one-shot-perception-experience-compression-ai-memory/)。
 
 ---
 
