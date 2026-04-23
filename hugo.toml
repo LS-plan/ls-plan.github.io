@@ -3,6 +3,9 @@ languageCode = 'zh-cn'
 title = 'Nobodyls 的技术日志'
 theme = 'PaperMod'
 
+[outputs]
+    home = ["HTML", "RSS", "JSON"]
+
 [params]
     env = "production"
     # 开启搜索功能
