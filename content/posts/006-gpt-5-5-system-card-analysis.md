@@ -1,6 +1,6 @@
 ---
 title: "[006] GPT-5.5 System Card 深度分析：能力、风险与发布策略"
-date: 2026-04-24T06:30:00+08:00
+date: 2026-04-24T05:30:00+08:00
 draft: false
 slug: "006-gpt-5-5-system-card-analysis"
 aliases:
