@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="620" viewBox="0 0 1120 620" role="img" aria-labelledby="title desc">
+  <title id="title">GPT-5.5 release strategy</title>
+  <desc id="desc">A diagram contrasting broad availability, API gating, trusted cyber access, and bio bug bounty testing.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f8fafc; }
+      .panel { fill: #ffffff; stroke: #d7dee8; stroke-width: 1; }
+      .title { font: 700 28px Arial, sans-serif; fill: #111827; }
+      .subtitle { font: 400 15px Arial, sans-serif; fill: #4b5563; }
+      .box { fill: #f1f5f9; stroke: #cbd5e1; stroke-width: 1.4; }
+      .box-green { fill: #ecfdf5; stroke: #99f6e4; stroke-width: 1.4; }
+      .box-amber { fill: #fffbeb; stroke: #fcd34d; stroke-width: 1.4; }
+      .box-red { fill: #fff1f2; stroke: #fecdd3; stroke-width: 1.4; }
+      .head { font: 700 18px Arial, sans-serif; fill: #111827; }
+      .body { font: 400 14px Arial, sans-serif; fill: #475569; }
+      .small { font: 700 13px Arial, sans-serif; fill: #0f766e; }
+      .arrow { stroke: #64748b; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+      .note { font: 13px Arial, sans-serif; fill: #64748b; }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#64748b"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="1120" height="620"/>
+  <rect class="panel" x="36" y="32" width="1048" height="548" rx="8"/>
+  <text class="title" x="64" y="78">GPT-5.5 发布策略：不是“藏起来”，而是分层开放</text>
+  <text class="subtitle" x="64" y="106">与 Claude Mythos 的“不普发”不同，GPT-5.5 选择在 ChatGPT/Codex 中上线，同时把高风险能力放进更强的治理通道。</text>
+
+  <rect class="box-green" x="74" y="166" width="286" height="126" rx="8"/>
+  <text class="head" x="98" y="202">普通用户入口</text>
+  <text class="body" x="98" y="234">ChatGPT: Plus / Pro / Business / Enterprise</text>
+  <text class="body" x="98" y="258">Codex: Plus / Pro / Business / Enterprise / Edu / Go</text>
+  <text class="small" x="98" y="280">默认走基线安全系统和产品监测</text>
+
+  <rect class="box" x="418" y="166" width="286" height="126" rx="8"/>
+  <text class="head" x="442" y="202">API 入口</text>
+  <text class="body" x="442" y="234">官方称很快进入 Responses 和 Chat Completions</text>
+  <text class="body" x="442" y="258">API 部署需要不同的安全与规模化要求</text>
+  <text class="small" x="442" y="280">可用性滞后于 ChatGPT/Codex</text>
+
+  <rect class="box-amber" x="762" y="166" width="286" height="126" rx="8"/>
+  <text class="head" x="786" y="202">Trusted Access for Cyber</text>
+  <text class="body" x="786" y="234">验证过的防御者获得更少摩擦的高级能力</text>
+  <text class="body" x="786" y="258">身份、用途、监测、问责共同约束</text>
+  <text class="small" x="786" y="280">防御访问随信任信号扩展</text>
+
+  <path class="arrow" d="M360 229 H418"/>
+  <path class="arrow" d="M704 229 H762"/>
+
+  <rect class="box-red" x="194" y="382" width="326" height="116" rx="8"/>
+  <text class="head" x="218" y="418">生物安全 Bug Bounty</text>
+  <text class="body" x="218" y="450">范围：Codex Desktop 中的 GPT-5.5</text>
+  <text class="body" x="218" y="474">目标：寻找可绕过五问生物安全挑战的通用 jailbreak</text>
+
+  <rect class="box" x="600" y="382" width="326" height="116" rx="8"/>
+  <text class="head" x="624" y="418">持续治理闭环</text>
+  <text class="body" x="624" y="450">外部红队、UK AISI、Cyber Frontier Risk Council</text>
+  <text class="body" x="624" y="474">监测误用、限制高风险响应、人工复核升级</text>
+
+  <path class="arrow" d="M520 440 H600"/>
+  <path class="arrow" d="M905 292 C905 334 845 346 820 382"/>
+
+  <text class="note" x="64" y="552">核心判断：GPT-5.5 的安全叙事不是单点拒绝发布，而是把“可用性”和“风险能力”拆成不同访问层。</text>
+</svg>

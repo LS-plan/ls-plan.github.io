@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="620" viewBox="0 0 1120 620" role="img" aria-labelledby="title desc">
+  <title id="title">GPT-5.5 preparedness map</title>
+  <desc id="desc">Preparedness classification for GPT-5.5 across biological and chemical, cybersecurity, and AI self-improvement domains.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f8fafc; }
+      .panel { fill: #ffffff; stroke: #d7dee8; stroke-width: 1; }
+      .title { font: 700 28px Arial, sans-serif; fill: #111827; }
+      .subtitle { font: 400 15px Arial, sans-serif; fill: #4b5563; }
+      .axis { stroke: #94a3b8; stroke-width: 2; }
+      .zone-low { fill: #dbeafe; }
+      .zone-med { fill: #dcfce7; }
+      .zone-high { fill: #fef3c7; }
+      .zone-critical { fill: #fee2e2; }
+      .zone-label { font: 700 14px Arial, sans-serif; fill: #334155; }
+      .domain { font: 700 20px Arial, sans-serif; fill: #111827; }
+      .desc { font: 400 14px Arial, sans-serif; fill: #475569; }
+      .badge { fill: #0f766e; }
+      .badge2 { fill: #b45309; }
+      .badge3 { fill: #475569; }
+      .badge-text { font: 700 13px Arial, sans-serif; fill: #ffffff; }
+      .note { font: 13px Arial, sans-serif; fill: #64748b; }
+      .line { stroke: #cbd5e1; stroke-width: 1; }
+    </style>
+  </defs>
+  <rect class="bg" width="1120" height="620"/>
+  <rect class="panel" x="36" y="32" width="1048" height="548" rx="8"/>
+  <text class="title" x="64" y="78">Preparedness 结论：两个 High，一个低于 High</text>
+  <text class="subtitle" x="64" y="106">OpenAI 将 GPT-5.5 的生化与网络安全能力视作 High，但网络安全仍低于 Critical；AI 自我改进没有达到 High。</text>
+
+  <g transform="translate(96 158)">
+    <rect class="zone-low" x="0" y="0" width="230" height="76" rx="6"/>
+    <rect class="zone-med" x="230" y="0" width="230" height="76" rx="6"/>
+    <rect class="zone-high" x="460" y="0" width="230" height="76" rx="6"/>
+    <rect class="zone-critical" x="690" y="0" width="230" height="76" rx="6"/>
+    <text class="zone-label" x="115" y="44" text-anchor="middle">Low / 未触发</text>
+    <text class="zone-label" x="345" y="44" text-anchor="middle">Medium</text>
+    <text class="zone-label" x="575" y="44" text-anchor="middle">High</text>
+    <text class="zone-label" x="805" y="44" text-anchor="middle">Critical</text>
+  </g>
+
+  <g transform="translate(96 274)">
+    <line class="line" x1="0" y1="64" x2="920" y2="64"/>
+    <text class="domain" x="0" y="8">生物与化学</text>
+    <text class="desc" x="0" y="34">按 High capability 处理，并激活相应 Preparedness safeguards。</text>
+    <rect class="badge" x="486" y="-20" width="148" height="34" rx="17"/>
+    <text class="badge-text" x="560" y="2" text-anchor="middle">High capability</text>
+  </g>
+
+  <g transform="translate(96 370)">
+    <line class="line" x1="0" y1="64" x2="920" y2="64"/>
+    <text class="domain" x="0" y="8">网络安全</text>
+    <text class="desc" x="0" y="34">相对 GPT-5.4 提升，按 High 处理，但未达 Critical 零日能力阈值。</text>
+    <rect class="badge2" x="486" y="-20" width="190" height="34" rx="17"/>
+    <text class="badge-text" x="581" y="2" text-anchor="middle">High, below Critical</text>
+  </g>
+
+  <g transform="translate(96 466)">
+    <text class="domain" x="0" y="8">AI 自我改进</text>
+    <text class="desc" x="0" y="34">最终 checkpoint 评估显示，与前代一样，没有达到 High threshold 的合理机会。</text>
+    <rect class="badge3" x="138" y="-20" width="154" height="34" rx="17"/>
+    <text class="badge-text" x="215" y="2" text-anchor="middle">Below High</text>
+  </g>
+
+  <text class="note" x="64" y="552">读法：这是风险能力分层，不等同于产品是否可用。GPT-5.5 的发布策略核心是广泛访问、基线护栏、可信访问与行为监测共同作用。</text>
+</svg>
