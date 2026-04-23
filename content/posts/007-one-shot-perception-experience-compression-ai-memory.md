@@ -189,6 +189,8 @@ Caddy 加 handle_path 就好了
 
 长期记忆像工具柜。
 
+> 如果你对这个“工作台/工具柜”的类比感兴趣，我在下一篇继续把它展开成“内存/存储/文件系统/调度器”的 AgentOS 视角：[[008] 从内存与存储看 AgentOS：AI 经验如何被保存、调度和复用](/posts/008-agentos-memory-storage-rag-experience/)。
+
 工作台再大，也不等于工具会被整理进柜子。
 
 ---
