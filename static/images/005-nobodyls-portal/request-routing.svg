@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="640" viewBox="0 0 1100 640" role="img" aria-labelledby="title desc">
+  <title id="title">Request routing through DNS and Caddy</title>
+  <desc id="desc">A step by step request flow showing DNS resolution, TLS termination, route matching, and upstream forwarding.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#273136"/>
+    </marker>
+    <style>
+      .bg { fill: #f6f1e8; }
+      .lane { fill: #fffaf0; stroke: #d5cbbb; stroke-width: 2; rx: 14; }
+      .box { fill: #ffffff; stroke: #273136; stroke-width: 2; rx: 8; }
+      .caddy { fill: #e4f3ec; stroke: #1f7a5b; stroke-width: 2; rx: 8; }
+      .upstream { fill: #eef5fb; stroke: #2f6f9f; stroke-width: 2; rx: 8; }
+      .data { fill: #fff1e9; stroke: #a84735; stroke-width: 2; rx: 8; }
+      .text { font-family: "Noto Sans SC", "Microsoft YaHei", Arial, sans-serif; fill: #1f292d; }
+      .muted { fill: #667275; }
+      .title { font-size: 28px; font-weight: 700; }
+      .label { font-size: 18px; font-weight: 700; }
+      .small { font-size: 14px; }
+      .code { font-family: Consolas, "SFMono-Regular", monospace; font-size: 14px; }
+      .line { fill: none; stroke: #273136; stroke-width: 2.2; marker-end: url(#arrow); }
+      .thin { fill: none; stroke: #667275; stroke-width: 1.8; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1100" height="640"/>
+  <text x="50" y="58" class="text title">一次请求在统一门户里的旅程</text>
+  <text x="52" y="88" class="text small muted">以 https://nobodyls.cn/image/ 为例：域名只负责找到入口机器，Caddy 决定请求该去哪个服务。</text>
+
+  <rect x="48" y="126" width="1004" height="134" class="lane"/>
+  <text x="72" y="156" class="text label">1. 域名解析：名字变成 IP</text>
+  <rect x="86" y="184" width="190" height="48" class="box"/>
+  <text x="117" y="214" class="text code">nobodyls.cn</text>
+  <rect x="362" y="184" width="190" height="48" class="box"/>
+  <text x="412" y="214" class="text label">DNS</text>
+  <rect x="638" y="184" width="250" height="48" class="box"/>
+  <text x="682" y="214" class="text code">8.155.163.203</text>
+  <path d="M276 208 L362 208" class="line"/>
+  <path d="M552 208 L638 208" class="line"/>
+
+  <rect x="48" y="292" width="1004" height="134" class="lane"/>
+  <text x="72" y="322" class="text label">2. HTTPS 连接：Caddy 是入口门卫</text>
+  <rect x="86" y="350" width="190" height="48" class="box"/>
+  <text x="123" y="380" class="text label">浏览器</text>
+  <rect x="362" y="350" width="250" height="48" class="caddy"/>
+  <text x="402" y="380" class="text label">Caddy 终止 TLS</text>
+  <rect x="700" y="350" width="190" height="48" class="box"/>
+  <text x="730" y="380" class="text code">Host + Path</text>
+  <path d="M276 374 L362 374" class="line"/>
+  <path d="M612 374 L700 374" class="line"/>
+
+  <rect x="48" y="458" width="1004" height="142" class="lane"/>
+  <text x="72" y="488" class="text label">3. 路由匹配：同一个域名，不同路径去不同上游</text>
+  <rect x="86" y="520" width="200" height="48" class="caddy"/>
+  <text x="117" y="550" class="text code">/image/*</text>
+  <rect x="334" y="520" width="200" height="48" class="upstream"/>
+  <text x="366" y="550" class="text code">localhost:8092</text>
+  <rect x="582" y="520" width="200" height="48" class="upstream"/>
+  <text x="628" y="550" class="text code">/var/www/elecmon</text>
+  <rect x="830" y="520" width="160" height="48" class="data"/>
+  <text x="870" y="550" class="text code">GitHub Pages</text>
+  <path d="M286 544 L334 544" class="thin"/>
+  <path d="M286 544 C360 600 490 600 582 544" class="thin"/>
+  <path d="M286 544 C466 468 708 468 830 544" class="thin"/>
+</svg>

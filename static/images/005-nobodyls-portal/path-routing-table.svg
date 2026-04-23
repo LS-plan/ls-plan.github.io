@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="520" viewBox="0 0 1100 520" role="img" aria-labelledby="title desc">
+  <title id="title">Caddy path routing table</title>
+  <desc id="desc">A table-like diagram showing how each nobodyls.cn path maps to a local or remote service.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f6f1e8; }
+      .card { fill: #fffaf0; stroke: #d5cbbb; stroke-width: 2; rx: 14; }
+      .head { fill: #273136; }
+      .rowA { fill: #ffffff; }
+      .rowB { fill: #f2eadc; }
+      .line { stroke: #d5cbbb; stroke-width: 2; }
+      .text { font-family: "Noto Sans SC", "Microsoft YaHei", Arial, sans-serif; fill: #1f292d; }
+      .white { fill: #fffaf0; }
+      .muted { fill: #667275; }
+      .title { font-size: 28px; font-weight: 700; }
+      .label { font-size: 17px; font-weight: 700; }
+      .small { font-size: 14px; }
+      .code { font-family: Consolas, "SFMono-Regular", monospace; font-size: 15px; }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1100" height="520"/>
+  <text x="50" y="58" class="text title">路径路由表：统一入口不等于把所有服务混在一起</text>
+  <text x="52" y="88" class="text small muted">Caddy 做的是请求分发。博客、图片工具、电费监控仍然各自独立运行。</text>
+
+  <rect x="50" y="124" width="1000" height="330" class="card"/>
+  <rect x="50" y="124" width="1000" height="58" class="head" rx="14"/>
+  <rect x="50" y="160" width="1000" height="22" class="head"/>
+
+  <text x="82" y="160" class="text white label">访问路径</text>
+  <text x="300" y="160" class="text white label">Caddy 动作</text>
+  <text x="560" y="160" class="text white label">真实服务</text>
+  <text x="830" y="160" class="text white label">为什么这样做</text>
+
+  <rect x="50" y="182" width="1000" height="68" class="rowA"/>
+  <rect x="50" y="250" width="1000" height="68" class="rowB"/>
+  <rect x="50" y="318" width="1000" height="68" class="rowA"/>
+  <rect x="50" y="386" width="1000" height="68" class="rowB"/>
+
+  <line x1="258" y1="124" x2="258" y2="454" class="line"/>
+  <line x1="518" y1="124" x2="518" y2="454" class="line"/>
+  <line x1="786" y1="124" x2="786" y2="454" class="line"/>
+  <line x1="50" y1="250" x2="1050" y2="250" class="line"/>
+  <line x1="50" y1="318" x2="1050" y2="318" class="line"/>
+  <line x1="50" y1="386" x2="1050" y2="386" class="line"/>
+
+  <text x="82" y="223" class="text code">/</text>
+  <text x="300" y="223" class="text small">静态文件服务</text>
+  <text x="560" y="223" class="text code">/var/www/nobodyls-portal</text>
+  <text x="830" y="214" class="text small">门户页本身很轻，</text>
+  <text x="830" y="235" class="text small">直接由 Caddy 托管即可。</text>
+
+  <text x="82" y="291" class="text code">/blog/*</text>
+  <text x="300" y="291" class="text small">反向代理</text>
+  <text x="560" y="291" class="text code">https://www.nobodyls.cn</text>
+  <text x="830" y="282" class="text small">博客仍在 GitHub Pages，</text>
+  <text x="830" y="303" class="text small">先复用现有发布链路。</text>
+
+  <text x="82" y="359" class="text code">/image/*</text>
+  <text x="300" y="359" class="text small">去掉前缀后代理</text>
+  <text x="560" y="359" class="text code">localhost:8092</text>
+  <text x="830" y="350" class="text small">前端用相对 API，</text>
+  <text x="830" y="371" class="text small">适合挂在子路径。</text>
+
+  <text x="82" y="427" class="text code">/elec/*</text>
+  <text x="300" y="427" class="text small">静态文件 + API 代理</text>
+  <text x="560" y="427" class="text code">/var/www/elecmon + :8089</text>
+  <text x="830" y="418" class="text small">页面静态化，采集接口</text>
+  <text x="830" y="439" class="text small">留在本机回环地址。</text>
+</svg>
