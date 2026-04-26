@@ -1,6 +1,6 @@
 ---
 title: "[010] Dario Amodei 文章体系分析：强 AI 的收益、风险与治理路线"
-date: 2026-04-27T08:30:00+08:00
+date: 2026-04-27T03:20:00+08:00
 draft: false
 slug: "010-dario-amodei-ai-essay-analysis"
 aliases:
