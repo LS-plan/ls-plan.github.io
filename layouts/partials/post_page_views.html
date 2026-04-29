@@ -1,0 +1,5 @@
+{{- $pageViewsEnabled := site.Params.pageViews.enable | default false -}}
+{{- if and $pageViewsEnabled (.Param "ShowPageViews") (not (.Param "hidePageViews")) .IsPage (eq .Section "posts") -}}
+{{- if or (not .Date.IsZero) (.Param "ShowReadingTime") (.Param "ShowWordCount") (not (.Param "hideAuthor")) -}}&nbsp;·&nbsp;{{- end -}}
+<span class="post-page-views">阅读 <span id="vercount_value_page_pv">--</span> 次</span>
+{{- end -}}

@@ -117,3 +117,9 @@
     syncState();
 })();
 </script>
+
+{{- $pageViewsEnabled := site.Params.pageViews.enable | default false }}
+{{- if and $pageViewsEnabled (.Param "ShowPageViews") (not (.Param "hidePageViews")) .IsPage (eq .Section "posts") }}
+{{- $pageViewsScript := site.Params.pageViews.script | default "https://events.vercount.one/js" }}
+<script defer src="{{ $pageViewsScript }}"></script>
+{{- end }}

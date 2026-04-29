@@ -11,9 +11,14 @@ theme = 'PaperMod'
     author = "Nobodyls"
     # 开启搜索功能
     ShowReadingTime = true
+    ShowPageViews = true
     ShowShareButtons = true
     ShowCodeCopyButtons = true
     ShowToc = true
+    [params.pageViews]
+        enable = true
+        provider = "vercount"
+        script = "https://events.vercount.one/js"
     # 首页信息卡片
     [params.homeInfoParams]
         Title = "👋 欢迎来到我的技术空间"
