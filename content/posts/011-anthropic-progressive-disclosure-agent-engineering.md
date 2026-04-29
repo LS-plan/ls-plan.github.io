@@ -11,7 +11,8 @@ categories: ["AI 工具"]
 
 > 分析对象：Anthropic Agent Skills 与 Claude Code 相关工程实践  
 > 整理时间：2026-04-29  
-> 关键词：渐进式披露、Agent Skills、Prompt Engineering、Context Engineering、Harness Engineering
+> 关键词：渐进式披露、Agent Skills、Prompt Engineering、Context Engineering、Harness Engineering  
+> **更新（2025-12-18）**：Anthropic 已将 Agent Skills 作为[开放标准（open standard）](https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills)发布，支持跨平台可移植性，不再仅限于 Claude 生态。
 
 ---
 
@@ -43,9 +44,20 @@ skill-name/
   templates/
 ```
 
-其中 `SKILL.md` 带有 YAML 元数据，至少包含 `name` 和 `description`。系统启动时，不会把所有 skill 的全文塞进上下文，而是只暴露每个 skill 的名称和描述。
+其中 `SKILL.md` 带有 YAML 元数据，至少包含 `name` 和 `description`。系统启动时，agent 会把每个已安装 skill 的 `name` 和 `description` **预加载进系统提示词（system prompt）**，而非把所有 skill 全文塞进上下文。
 
-当模型判断某个 skill 与当前任务相关时，再读取完整的 `SKILL.md`。如果 `SKILL.md` 继续引用了 `references/`、`scripts/` 或 `templates/`，模型再根据具体任务按需进入更深层内容。
+当模型判断某个 skill 与当前任务相关时，会通过文件读取工具（如 Bash）**主动调用**来读取完整的 `SKILL.md`——这是一次真实的工具调用，不是被动注入。如果 `SKILL.md` 继续引用了 `references/`、`scripts/` 或 `templates/` 中的文件，模型再以同样方式按需读取更深层内容。
+
+以 Anthropic 官方给出的 PDF skill 为例，上下文窗口的变化路径是：
+
+```text
+系统提示词 + 已安装 skill 元数据 + 用户消息
+  → Claude 调用 Bash 读取 pdf/SKILL.md
+  → Claude 发现需要填写表单，调用 Bash 读取 forms.md
+  → Claude 使用加载到的指令完成任务
+```
+
+这个过程完全透明可观测，每一层加载都是显式的工具调用记录。
 
 这个结构可以抽象为三层：
 
@@ -55,11 +67,13 @@ skill-name/
 | 指导层 | `SKILL.md` 正文 | 让模型知道如何执行 |
 | 执行层 | 参考资料、脚本、模板 | 让模型在具体场景里做对 |
 
-这就是渐进式披露的关键：**先暴露“可用能力”，再按需加载“执行细节”**。
+这就是渐进式披露的关键：**先暴露”可用能力”，再按需加载”执行细节”**。
+
+Anthropic 特别指出一个关键工程优势：由于模型是按需读取文件而非一次性全量加载，**可以捆绑进 skill 的上下文量在技术上是无界的（effectively unbounded）**。限制的不是 skill 的体量，而是单次执行中实际被读入上下文的量。
 
 很多 Agent 项目的失败不是因为缺少知识，而是因为一开始就把所有知识塞进上下文，导致模型注意力稀释、工具选择变差、成本上升、调试困难。
 
-Anthropic 在《Building effective agents》里也强调过类似工程取向：有效 Agent 系统往往不来自复杂框架，而来自简单、可组合、可观测的模式。Workflow 走预定义路径，Agent 由模型动态决定过程与工具使用。渐进式披露恰好处在二者之间：它不强行替模型规划所有路径，但给模型提供了可发现、可验证、可执行的路标。
+Anthropic 在《[Building effective agents](https://www.anthropic.com/engineering/building-effective-agents)》里也强调过类似工程取向：有效 Agent 系统往往不来自复杂框架，而来自简单、可组合、可观测的模式。Workflow 走预定义路径，Agent 由模型动态决定过程与工具使用。渐进式披露可以服务于这两种模式：它不强行替模型规划所有路径，但给模型提供了可发现、可验证、可执行的路标。
 
 ---
 
@@ -402,7 +416,17 @@ marketplaces, platforms, or transfers.
 }
 ```
 
-这比空泛地说“提升 Agent 质量”更可执行。
+这比空泛地说”提升 Agent 质量”更可执行。
+
+### 7.5 与 Claude 协作迭代 Skill
+
+[Anthropic 原文](https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills)中有一个常被忽视的工程建议：**在完成任务的过程中，让 Claude 参与 skill 的写作和迭代本身**。
+
+具体做法：在 Claude 完成一项任务后，要求它把成功路径和常见错误归纳为可复用的 skill 内容；如果它在使用某个 skill 时出了问题，让它自我反思哪里出错，`SKILL.md` 应该如何修改。
+
+这比”事先设计完整 skill”更务实。因为很多时候你无法提前知道 Claude 需要什么信息，通过实际执行来发现，比凭空预测要准确得多。
+
+> 不要试图在一开始就预判 Claude 需要什么上下文，而是通过实际执行来发现，再把稳定路径沉淀为 skill。
 
 ---
 
