@@ -44,7 +44,7 @@ memory.preserve()      -> next-session context
 Vibe-Skills：我来安排这件事怎么推进。
 ```
 
-我的判断是：Vibe-Skills 有明显的渐进式披露设计，而且是多层渐进式披露：
+结合 [[011] Anthropic 渐进式披露设计](/posts/011-anthropic-progressive-disclosure-agent-engineering/) 的视角，我的判断是：Vibe-Skills 有明显的渐进式披露设计，而且是多层渐进式披露：
 
 - 外部只暴露 `vibe` / `vibe-upgrade` 两个主要入口。
 - 内部再根据任务阶段路由到专家 skills。
@@ -500,6 +500,34 @@ Vibe-Skills 是 workflow progressive disclosure。
 
 后者解决“能力如何被编排成可靠交付”。
 
+如果套用 011 里的三层模型，Vibe-Skills 可以这样理解：
+
+```text
+发现层：vibe / vibe-upgrade
+指导层：SKILL.md + runtime protocol
+执行层：340+ bundled skills + scripts + evidence + memory
+```
+
+但 Vibe-Skills 又多了一层，这层是它区别于普通 Agent Skills 的关键：
+
+```text
+治理层：requirement_doc / xl_plan / phase_cleanup
+```
+
+Anthropic Agent Skills 主要让 agent 知道“该读什么”。Vibe-Skills 进一步规定“什么时候停下来让用户确认，什么时候进入下一阶段，什么时候必须拿出验证证据”。
+
+所以它不是简单复刻 Anthropic Skills，而是在 011 的能力渐进式披露基础上，把披露边界从“文档和脚本”扩展到了“任务生命周期”：
+
+```text
+先披露入口，不披露全部 skills。
+先冻结需求，不直接执行。
+先给阶段计划，不一次跑到底。
+先验证证据，不只宣称完成。
+先保存上下文，不把旧历史常驻注入。
+```
+
+这也是 Vibe-Skills 最值得研究的地方：它把 skills 从“可调用能力”组织成了“可治理流程”。
+
 ---
 
 ## 九、和 AgentOS / 经验系统的关系
@@ -731,3 +759,4 @@ skills 应该被编排成工作流。
 - Vibe-Skills, [`SKILL.md`](https://github.com/foryourhealth111-pixel/Vibe-Skills/blob/main/SKILL.md)
 - Vibe-Skills, [Prompt-based install](https://github.com/foryourhealth111-pixel/Vibe-Skills/blob/main/docs/install/one-click-install-release-copy.en.md)
 - Vibe-Skills, [Command install reference](https://github.com/foryourhealth111-pixel/Vibe-Skills/blob/main/docs/install/recommended-full-path.en.md)
+
