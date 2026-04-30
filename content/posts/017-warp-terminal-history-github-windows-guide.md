@@ -7,6 +7,12 @@ aliases:
   - "/posts/warp-terminal-history-github-windows-guide/"
 tags: ["Warp", "Terminal", "AI Agent", "Windows", "Rust", "Open Source", "Agentic Development Environment"]
 categories: ["AI 工具"]
+locked: true
+passwordHash: "9df2308c15f6ca21cf2fd082fba26949508c83d5c0285bea8c90fdf7b3e1dd16"
+lockAdminHash: "cb91cd7115499c7a7d4669f82f918dd0975d309d304d0e9607e86f69d9018139"
+hideSummary: true
+searchHidden: true
+robotsNoIndex: true
 ---
 
 > 写作时间：2026-04-30  
