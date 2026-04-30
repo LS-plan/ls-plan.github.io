@@ -390,6 +390,7 @@
         var formTitle = form ? form.querySelector("[data-ctrl-form-title]") : null;
         var clientOverlay = hasServer ? null : document.querySelector("[data-client-overlay]");
         var postContent = hasServer ? null : document.querySelector(".post-content");
+        var postSidebar = hasServer ? null : document.querySelector(".post-sidebar");
         var serverOverlay = hasServer ? document.querySelector("[data-lock-overlay]") : null;
         var clientKey = "nobodyls:post-lock:" + postId;
         var pendingAction = "lock";
@@ -438,6 +439,7 @@
           localStorage.setItem(clientKey, "locked");
           if (clientOverlay) clientOverlay.hidden = false;
           if (postContent) postContent.style.display = "none";
+          if (postSidebar) postSidebar.style.display = "none";
           document.body.classList.add("has-client-post-lock");
           updateBtn();
         }
@@ -446,6 +448,7 @@
           localStorage.removeItem(clientKey);
           if (clientOverlay) clientOverlay.hidden = true;
           if (postContent) postContent.style.display = "";
+          if (postSidebar) postSidebar.style.display = "";
           document.body.classList.remove("has-client-post-lock");
           updateBtn();
         }
@@ -453,6 +456,7 @@
         if (!hasServer && isClientLocked()) {
           if (clientOverlay) clientOverlay.hidden = false;
           if (postContent) postContent.style.display = "none";
+          if (postSidebar) postSidebar.style.display = "none";
           document.body.classList.add("has-client-post-lock");
         }
 
