@@ -4,7 +4,7 @@
 {{- $hasArticleToc := and (.Param "ShowToc") (ge (len $headers) 1) -}}
 {{- $passwordHash := .Param "passwordHash" -}}
 {{- $lockAdminHash := .Param "lockAdminHash" -}}
-{{- $lockedPost := or (.Param "locked") $passwordHash -}}
+{{- $lockedPost := $passwordHash -}}
 
 <div class="post-layout{{- if $hasArticleToc }} post-layout--with-toc post-layout--viewport{{- end }}">
   {{- if $hasArticleToc }}{{ if $lockedPost }}<template data-lock-source="sidebar">{{ end }}
@@ -17,7 +17,9 @@
 
   <article class="post-single">
     <header class="post-header">
+      {{- if not $lockedPost }}
       {{ partial "breadcrumbs.html" . }}
+      {{- end }}
       <h1 class="post-title entry-hint-parent">
         {{ .Title }}
         {{- if .Draft }}
@@ -29,6 +31,7 @@
         </span>
         {{- end }}
       </h1>
+      {{- if not $lockedPost }}
       {{- if .Description }}
       <div class="post-description">
         {{ .Description }}
@@ -43,33 +46,30 @@
         {{- partial "post_canonical.html" . -}}
       </div>
       {{- end }}
+      {{- end }}
     </header>
+    {{- if not $lockedPost }}
     {{- $isHidden := (.Param "cover.hiddenInSingle") | default (.Param "cover.hidden") | default false }}
     {{- partial "cover.html" (dict "cxt" . "IsSingle" true "isHidden" $isHidden) }}
+    {{- end }}
 
     {{- if $passwordHash }}
     <section class="post-lock" data-post-lock="{{ .RelPermalink | md5 }}" data-password-hash="{{ $passwordHash }}" data-lock-admin-hash="{{ $lockAdminHash }}" aria-label="文章锁定">
       <style>
         body.has-post-lock {
-          overflow: hidden;
+          overflow: auto;
         }
         .post-lock {
-          --post-lock-top: 64px;
-          margin: 0;
+          margin: 20px 0 0;
         }
         .post-lock[hidden],
         .post-lock [hidden] {
           display: none !important;
         }
         .post-lock-overlay {
-          position: fixed;
-          inset: var(--post-lock-top) 0 0;
-          z-index: 80;
           display: grid;
           place-items: center;
-          padding: 24px;
-          background: color-mix(in srgb, var(--theme) 86%, transparent);
-          backdrop-filter: blur(12px);
+          padding: 24px 0;
         }
         .post-lock-panel {
           width: min(420px, 100%);
@@ -169,7 +169,7 @@
         </div>
       </div>
       <div class="post-lock-toolbar" data-lock-toolbar hidden>
-        <button class="post-lock-secondary" type="button" data-open-lock-admin>重新锁定</button>
+        <button class="post-lock-secondary" type="button" data-open-lock-admin>重新隐藏正文</button>
       </div>
       <dialog class="post-lock-dialog" data-unlock-dialog>
         <form class="post-lock-form" data-unlock-form>
@@ -178,14 +178,14 @@
           <p class="post-lock-error" role="status" aria-live="polite"></p>
           <div class="post-lock-form-actions">
             <button class="post-lock-secondary" type="button" data-close-dialog>取消</button>
-            <button class="post-lock-button" type="submit">解锁</button>
+            <button class="post-lock-button" type="submit">打开阅读</button>
           </div>
         </form>
       </dialog>
       {{- if $lockAdminHash }}
       <dialog class="post-lock-dialog" data-lock-dialog>
         <form class="post-lock-form" data-lock-form>
-          <p class="post-lock-form-title">确认重新锁定</p>
+          <p class="post-lock-form-title">确认重新隐藏正文</p>
           <input class="post-lock-input" type="password" autocomplete="current-password" placeholder="管理密码" aria-label="管理密码">
           <p class="post-lock-error" role="status" aria-live="polite"></p>
           <div class="post-lock-form-actions">
@@ -200,30 +200,6 @@
 
     {{- if .Content }}{{ if $lockedPost }}<template data-lock-source="content">{{ end }}
     <div class="post-content"{{ if $passwordHash }} data-protected-content hidden{{ end }}>
-      <section class="post-client-lock" data-client-lock="{{ .RelPermalink | md5 }}" aria-label="前端临时锁定">
-        <button class="post-client-lock-button" type="button" data-client-lock-open>锁定本文</button>
-        <dialog class="post-client-lock-dialog" data-client-lock-dialog>
-          <form class="post-client-lock-form" data-client-lock-form>
-            <p class="post-client-lock-title" data-client-lock-dialog-title>确认锁定本文</p>
-            <p class="post-client-lock-description" data-client-lock-dialog-description>输入管理密码后，本文会在当前浏览器进入锁定状态。</p>
-            <input class="post-client-lock-input" type="password" autocomplete="current-password" placeholder="管理密码" aria-label="管理密码">
-            <p class="post-client-lock-error" role="status" aria-live="polite"></p>
-            <div class="post-client-lock-actions">
-              <button class="post-client-lock-secondary" type="button" data-client-lock-close>取消</button>
-              <button class="post-client-lock-primary" type="submit">锁定</button>
-            </div>
-          </form>
-        </dialog>
-        <div class="post-client-lock-overlay" data-client-lock-overlay hidden>
-          <form class="post-client-lock-panel" data-client-unlock-form>
-            <p class="post-client-lock-title">本文已锁定</p>
-            <p class="post-client-lock-description">输入查看密码后可以临时阅读，但不会取消本文的锁定状态。</p>
-            <input class="post-client-lock-input" type="password" inputmode="numeric" autocomplete="current-password" placeholder="查看密码" aria-label="查看密码">
-            <p class="post-client-lock-error" role="status" aria-live="polite"></p>
-            <button class="post-client-lock-primary" type="submit">打开阅读</button>
-          </form>
-        </div>
-      </section>
       <div class="post-heading-stack" aria-label="当前标题路径"></div>
       {{- if not (.Param "disableAnchoredHeadings") }}
       {{- partial "anchored_headings.html" .Content -}}
@@ -252,175 +228,6 @@
     {{- partial "comments.html" . }}
     {{- end }}
 
-    <script>
-      (function () {
-        function toHex(buffer) {
-          return Array.prototype.map.call(new Uint8Array(buffer), function (byte) {
-            return byte.toString(16).padStart(2, "0");
-          }).join("");
-        }
-
-        async function hash(value) {
-          var data = new TextEncoder().encode(value);
-          return toHex(await crypto.subtle.digest("SHA-256", data));
-        }
-
-        function openDialog(dialog, input) {
-          if (!dialog) return;
-          if (typeof dialog.showModal === "function") {
-            dialog.showModal();
-          } else {
-            dialog.removeAttribute("hidden");
-          }
-          if (input) window.setTimeout(function () { input.focus(); }, 0);
-        }
-
-        function closeDialog(dialog) {
-          if (!dialog) return;
-          if (typeof dialog.close === "function") {
-            dialog.close();
-          } else {
-            dialog.setAttribute("hidden", "");
-          }
-        }
-
-        function setOverlayTop(section) {
-          var header = document.querySelector("body > header") || document.querySelector(".header");
-          var height = header ? Math.ceil(header.getBoundingClientRect().height) : 64;
-          section.style.setProperty("--client-lock-top", height + "px");
-        }
-
-        window.initClientPostLock = function () {
-          document.querySelectorAll("[data-client-lock]").forEach(function (section) {
-            if (section.dataset.clientLockReady === "true") return;
-            section.dataset.clientLockReady = "true";
-
-            var lockKey = "nobodyls:client-post-lock:" + section.getAttribute("data-client-lock");
-            var adminHash = "cb91cd7115499c7a7d4669f82f918dd0975d309d304d0e9607e86f69d9018139";
-            var viewHash = "9df2308c15f6ca21cf2fd082fba26949508c83d5c0285bea8c90fdf7b3e1dd16";
-            var openButton = section.querySelector("[data-client-lock-open]");
-            var dialog = section.querySelector("[data-client-lock-dialog]");
-            var lockForm = section.querySelector("[data-client-lock-form]");
-            var lockInput = lockForm ? lockForm.querySelector("input") : null;
-            var lockError = lockForm ? lockForm.querySelector(".post-client-lock-error") : null;
-            var dialogTitle = section.querySelector("[data-client-lock-dialog-title]");
-            var dialogDescription = section.querySelector("[data-client-lock-dialog-description]");
-            var overlay = section.querySelector("[data-client-lock-overlay]");
-            var unlockForm = section.querySelector("[data-client-unlock-form]");
-            var unlockInput = unlockForm ? unlockForm.querySelector("input") : null;
-            var unlockError = unlockForm ? unlockForm.querySelector(".post-client-lock-error") : null;
-            var pendingAction = "lock";
-
-            function isLocked() {
-              return localStorage.getItem(lockKey) === "locked";
-            }
-
-            function updateButton() {
-              if (!openButton) return;
-              openButton.textContent = isLocked() ? "取消锁定" : "锁定本文";
-              openButton.setAttribute("aria-pressed", isLocked() ? "true" : "false");
-            }
-
-            function showLockedOverlay() {
-              setOverlayTop(section);
-              if (overlay) overlay.hidden = false;
-              document.body.classList.add("has-client-post-lock");
-              if (unlockInput) {
-                window.setTimeout(function () { unlockInput.focus(); }, 0);
-              }
-            }
-
-            function hideLockedOverlay() {
-              if (overlay) overlay.hidden = true;
-              document.body.classList.remove("has-client-post-lock");
-              if (unlockInput) unlockInput.value = "";
-            }
-
-            function setDialogCopy(action) {
-              if (!dialogTitle || !dialogDescription) return;
-              if (action === "unlock") {
-                dialogTitle.textContent = "确认取消锁定";
-                dialogDescription.textContent = "输入管理密码后，本文会在当前浏览器取消锁定。";
-              } else {
-                dialogTitle.textContent = "确认锁定本文";
-                dialogDescription.textContent = "输入管理密码后，本文会在当前浏览器进入锁定状态。";
-              }
-            }
-
-            if (!window.crypto || !crypto.subtle) {
-              if (openButton) openButton.disabled = true;
-              return;
-            }
-
-            setOverlayTop(section);
-            window.addEventListener("resize", function () { setOverlayTop(section); });
-
-            updateButton();
-
-            if (isLocked()) {
-              showLockedOverlay();
-            }
-
-            if (openButton) {
-              openButton.addEventListener("click", function () {
-                if (lockError) lockError.textContent = "";
-                pendingAction = isLocked() ? "unlock" : "lock";
-                setDialogCopy(pendingAction);
-                openDialog(dialog, lockInput);
-              });
-            }
-
-            section.querySelectorAll("[data-client-lock-close]").forEach(function (button) {
-              button.addEventListener("click", function () {
-                closeDialog(button.closest("dialog"));
-              });
-            });
-
-            if (lockForm) {
-              lockForm.addEventListener("submit", async function (event) {
-                event.preventDefault();
-                if (lockError) lockError.textContent = "";
-                var actualHash = await hash(lockInput ? lockInput.value : "");
-                if (actualHash !== adminHash) {
-                  if (lockError) lockError.textContent = "管理密码不正确。";
-                  if (lockInput) lockInput.select();
-                  return;
-                }
-
-                if (pendingAction === "unlock") {
-                  localStorage.removeItem(lockKey);
-                  hideLockedOverlay();
-                } else {
-                  localStorage.setItem(lockKey, "locked");
-                  showLockedOverlay();
-                }
-
-                if (lockInput) lockInput.value = "";
-                closeDialog(dialog);
-                updateButton();
-              });
-            }
-
-            if (unlockForm) {
-              unlockForm.addEventListener("submit", async function (event) {
-                event.preventDefault();
-                if (unlockError) unlockError.textContent = "";
-                var actualHash = await hash(unlockInput ? unlockInput.value : "");
-                if (isLocked() && actualHash === viewHash) {
-                  hideLockedOverlay();
-                } else if (unlockError) {
-                  unlockError.textContent = "查看密码不正确。";
-                  if (unlockInput) unlockInput.select();
-                }
-              });
-            }
-          });
-        };
-
-        window.initClientPostLock();
-      })();
-    </script>
-
     {{- if $passwordHash }}
     <script>
       (function () {
@@ -441,12 +248,6 @@
         var contentSlot = document.querySelector('[data-protected-slot="content"]');
         var footerSlot = document.querySelector('[data-protected-slot="footer"]');
         var adminHash = lock.getAttribute("data-lock-admin-hash") || "";
-
-        function setOverlayTop() {
-          var header = document.querySelector("body > header") || document.querySelector(".header");
-          var height = header ? Math.ceil(header.getBoundingClientRect().height) : 64;
-          lock.style.setProperty("--post-lock-top", height + "px");
-        }
 
         function openDialog(dialog, input) {
           if (!dialog) return;
@@ -534,13 +335,8 @@
               console.warn("Post viewport navigation init failed.", error);
             }
           }
-          if (typeof window.initClientPostLock === "function") {
-            window.initClientPostLock();
-          }
         }
 
-        setOverlayTop();
-        window.addEventListener("resize", setOverlayTop);
         document.body.classList.add("has-post-lock");
 
         if (!window.crypto || !crypto.subtle) {

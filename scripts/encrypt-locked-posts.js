@@ -75,6 +75,13 @@ function replaceLockedDescriptions(html) {
     .replace(/<meta\s+property="og:description"\s+content="[\s\S]*?">/i, `<meta property="og:description" content="${description}">`)
     .replace(/<meta\s+name=twitter:description\s+content="[\s\S]*?">/i, `<meta name=twitter:description content="${description}">`);
 }
+
+function removeLockedMetadata(html) {
+  return html
+    .replace(/<meta\s+name=keywords\s+content="[\s\S]*?">/i, "")
+    .replace(/<meta\s+property="article:tag"\s+content="[\s\S]*?">/gi, "");
+}
+
 function removeBlogPostingSchema(html) {
   return html.replace(/<script\s+type=(?:"application\/ld\+json"|application\/ld\+json)>([\s\S]*?)<\/script>/g, (match, body) => {
     return body.includes('"@type":"BlogPosting"') || body.includes('"@type": "BlogPosting"') ? "" : match;
@@ -108,7 +115,7 @@ function processFile(filePath) {
   const encrypted = encryptJson(payload, passwordHash);
   const encryptedScript = `<script type="application/json" data-encrypted-post>${JSON.stringify(encrypted)}</script>`;
 
-  html = replaceLockedDescriptions(removeBlogPostingSchema(html));
+  html = removeLockedMetadata(replaceLockedDescriptions(removeBlogPostingSchema(html)));
   html = html.replace(/\sdata-password-hash=(?:"[^"]+"|[^\s>]+)/i, "");
   html = html.replace("</article>", `${encryptedScript}\n  </article>`);
 
