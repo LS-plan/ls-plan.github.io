@@ -2,6 +2,8 @@
 
 {{- $headers := findRE "<h[1-6].*?>(.|\n])+?</h[1-6]>" .Content -}}
 {{- $hasArticleToc := and (.Param "ShowToc") (ge (len $headers) 1) -}}
+{{- $passwordHash := .Param "passwordHash" -}}
+{{- $lockAdminHash := .Param "lockAdminHash" -}}
 
 <div class="post-layout{{- if $hasArticleToc }} post-layout--with-toc post-layout--viewport{{- end }}">
   {{- if $hasArticleToc }}
@@ -44,8 +46,101 @@
     {{- $isHidden := (.Param "cover.hiddenInSingle") | default (.Param "cover.hidden") | default false }}
     {{- partial "cover.html" (dict "cxt" . "IsSingle" true "isHidden" $isHidden) }}
 
+    {{- if $passwordHash }}
+    <section class="post-lock" data-post-lock="{{ .RelPermalink | md5 }}" data-password-hash="{{ $passwordHash }}">
+      <style>
+        .post-lock {
+          margin: 28px 0;
+          padding: 22px;
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          background: var(--entry);
+        }
+        .post-lock-title {
+          margin: 0 0 8px;
+          font-size: 1.15rem;
+          font-weight: 700;
+        }
+        .post-lock-description {
+          margin: 0 0 16px;
+          color: var(--secondary);
+        }
+        .post-lock-form {
+          display: flex;
+          gap: 10px;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+        .post-lock-input {
+          min-width: min(260px, 100%);
+          padding: 10px 12px;
+          color: var(--primary);
+          background: var(--theme);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          font: inherit;
+        }
+        .post-lock-button {
+          padding: 10px 14px;
+          color: var(--theme);
+          background: var(--primary);
+          border: 1px solid var(--primary);
+          border-radius: 8px;
+          font: inherit;
+          font-weight: 700;
+          cursor: pointer;
+        }
+        .post-lock-error {
+          width: 100%;
+          min-height: 1.5em;
+          margin: 4px 0 0;
+          color: #b42318;
+        }
+        .post-lock-actions {
+          display: flex;
+          justify-content: flex-end;
+          margin: 18px 0 0;
+        }
+        .post-lock-admin {
+          margin: 18px 0 0;
+          padding: 16px;
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          background: var(--code-bg);
+        }
+        .post-lock-secondary {
+          padding: 8px 12px;
+          color: var(--primary);
+          background: transparent;
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          font: inherit;
+          cursor: pointer;
+        }
+      </style>
+      <p class="post-lock-title" data-lock-title>这篇文章已锁定</p>
+      <p class="post-lock-description" data-lock-description>请输入访问密码查看正文。</p>
+      <form class="post-lock-form" data-unlock-form>
+        <input class="post-lock-input" type="password" inputmode="numeric" autocomplete="current-password" placeholder="访问密码" aria-label="访问密码">
+        <button class="post-lock-button" type="submit">解锁</button>
+        <p class="post-lock-error" role="status" aria-live="polite"></p>
+      </form>
+      {{- if $lockAdminHash }}
+      <div class="post-lock-actions" data-lock-actions hidden>
+        <button class="post-lock-secondary" type="button" data-open-lock-admin>重新锁定</button>
+      </div>
+      <form class="post-lock-form post-lock-admin" data-lock-form hidden>
+        <input class="post-lock-input" type="password" autocomplete="current-password" placeholder="管理密码" aria-label="管理密码">
+        <button class="post-lock-button" type="submit">确认锁定</button>
+        <button class="post-lock-secondary" type="button" data-cancel-lock>取消</button>
+        <p class="post-lock-error" role="status" aria-live="polite"></p>
+      </form>
+      {{- end }}
+    </section>
+    {{- end }}
+
     {{- if .Content }}
-    <div class="post-content">
+    <div class="post-content"{{ if $passwordHash }} data-protected-content hidden{{ end }}>
       <div class="post-heading-stack" aria-label="当前标题路径"></div>
       {{- if not (.Param "disableAnchoredHeadings") }}
       {{- partial "anchored_headings.html" .Content -}}
@@ -53,7 +148,7 @@
     </div>
     {{- end }}
 
-    <footer class="post-footer">
+    <footer class="post-footer"{{ if $passwordHash }} data-protected-content hidden{{ end }}>
       {{- $tags := .Language.Params.Taxonomies.tag | default "tags" }}
       <ul class="post-tags">
         {{- range ($.GetTerms $tags) }}
@@ -70,6 +165,121 @@
 
     {{- if (.Param "comments") }}
     {{- partial "comments.html" . }}
+    {{- end }}
+
+    {{- if $passwordHash }}
+    <script>
+      (function () {
+        var lock = document.querySelector("[data-post-lock]");
+        if (!lock) return;
+        var storageKey = "post-lock:" + lock.getAttribute("data-post-lock");
+        var expectedHash = lock.getAttribute("data-password-hash");
+        var protectedNodes = document.querySelectorAll("[data-protected-content]");
+        var unlockForm = lock.querySelector("[data-unlock-form]");
+        var unlockInput = unlockForm.querySelector("input");
+        var unlockError = unlockForm.querySelector(".post-lock-error");
+        var lockActions = lock.querySelector("[data-lock-actions]");
+        var lockForm = lock.querySelector("[data-lock-form]");
+        var openLockAdmin = lock.querySelector("[data-open-lock-admin]");
+        var cancelLock = lock.querySelector("[data-cancel-lock]");
+        var lockTitle = lock.querySelector("[data-lock-title]");
+        var lockDescription = lock.querySelector("[data-lock-description]");
+        var adminHash = "{{ $lockAdminHash }}";
+
+        function reveal() {
+          protectedNodes.forEach(function (node) {
+            node.hidden = false;
+          });
+          unlockForm.hidden = true;
+          lockTitle.textContent = "这篇文章已解锁";
+          lockDescription.textContent = "正文内容已在当前浏览器中显示。";
+          if (lockActions) lockActions.hidden = false;
+          lock.hidden = false;
+        }
+
+        function lockAgain() {
+          protectedNodes.forEach(function (node) {
+            node.hidden = true;
+          });
+          localStorage.removeItem(storageKey);
+          unlockForm.hidden = false;
+          unlockInput.value = "";
+          lockTitle.textContent = "这篇文章已锁定";
+          lockDescription.textContent = "请输入访问密码查看正文。";
+          if (lockActions) lockActions.hidden = true;
+          if (lockForm) {
+            lockForm.hidden = true;
+            lockForm.reset();
+          }
+          lock.hidden = false;
+          unlockInput.focus();
+        }
+
+        function toHex(buffer) {
+          return Array.prototype.map.call(new Uint8Array(buffer), function (byte) {
+            return byte.toString(16).padStart(2, "0");
+          }).join("");
+        }
+
+        async function hash(value) {
+          var data = new TextEncoder().encode(value);
+          return toHex(await crypto.subtle.digest("SHA-256", data));
+        }
+
+        if (localStorage.getItem(storageKey) === expectedHash) {
+          reveal();
+          return;
+        }
+
+        if (!window.crypto || !crypto.subtle) {
+          unlockError.textContent = "当前浏览器不支持本地密码校验。";
+          return;
+        }
+
+        unlockForm.addEventListener("submit", async function (event) {
+          event.preventDefault();
+          unlockError.textContent = "";
+          var actualHash = await hash(unlockInput.value || "");
+          if (actualHash === expectedHash) {
+            localStorage.setItem(storageKey, expectedHash);
+            reveal();
+          } else {
+            unlockError.textContent = "密码不正确。";
+            unlockInput.select();
+          }
+        });
+
+        if (openLockAdmin && lockForm) {
+          openLockAdmin.addEventListener("click", function () {
+            lockForm.hidden = false;
+            lockForm.querySelector("input").focus();
+          });
+        }
+
+        if (cancelLock && lockForm) {
+          cancelLock.addEventListener("click", function () {
+            lockForm.hidden = true;
+            lockForm.reset();
+          });
+        }
+
+        if (lockForm) {
+          lockForm.addEventListener("submit", async function (event) {
+            event.preventDefault();
+            var input = lockForm.querySelector("input");
+            var error = lockForm.querySelector(".post-lock-error");
+            error.textContent = "";
+            var actualHash = await hash(input.value || "");
+            if (actualHash === adminHash) {
+              lockAgain();
+            } else {
+              error.textContent = "管理密码不正确。";
+              input.select();
+            }
+          });
+        }
+      })();
+    </script>
     {{- end }}
   </article>
 </div>

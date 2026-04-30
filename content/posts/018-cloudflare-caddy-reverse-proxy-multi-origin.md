@@ -2,6 +2,12 @@
 title: "[018] Cloudflare 橙云、Caddy 反向代理与多源站门户：从 nobodyls.cn 的改造说起"
 date: 2026-04-30T15:20:00+08:00
 draft: false
+locked: true
+passwordHash: "9df2308c15f6ca21cf2fd082fba26949508c83d5c0285bea8c90fdf7b3e1dd16"
+lockAdminHash: "cb91cd7115499c7a7d4669f82f918dd0975d309d304d0e9607e86f69d9018139"
+hideSummary: true
+searchHidden: true
+robotsNoIndex: true
 slug: "018-cloudflare-caddy-reverse-proxy-multi-origin"
 aliases:
   - "/posts/cloudflare-caddy-reverse-proxy-multi-origin/"
@@ -26,7 +32,7 @@ nobodyls.cn/blog         -> 301 跳转到 blog.nobodyls.cn
 nobodyls.cn/filebox      -> 阿里云内网本机服务 127.0.0.1:12345
 imageweb.nobodyls.cn     -> 阿里云图片服务
 elec.nobodyls.cn         -> 阿里云电量监控服务
-los.nobodyls.cn          -> 洛杉矶服务器测试入口
+los.nobodyls.cn          -> 测试节点入口
 ```
 
 这里面其实包含了现代个人基础设施的一套典型模式：
@@ -92,7 +98,7 @@ nobodyls.cn
   -> Image Web
   -> Elec Monitor
   -> Filebox
-  -> Los Angeles Node
+  -> Test Node
 ```
 
 这种设计有几个好处：
@@ -338,7 +344,7 @@ fail2ban 是补充层，不是第一道门。
   GitHub Pages
   阿里云本机容器
   阿里云静态目录
-  洛杉矶服务器
+  测试节点
 ```
 
 对应关系可以写成：
@@ -439,7 +445,7 @@ blog：长期内容和公开表达。
 filebox：短期文件交换。
 imageweb：具体工具能力。
 elec：家庭/设备数据面板。
-los：另一个地域节点。
+los：测试节点。
 ```
 
 而 Cloudflare + Caddy 的组合，刚好让这件事变得非常轻：
