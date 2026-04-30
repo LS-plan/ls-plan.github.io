@@ -7,6 +7,12 @@ aliases:
   - "/posts/byr-feeling-in-the-mood-for-love-hotpot/"
 tags: ["情感", "北邮人论坛", "花样年华", "重庆", "个人成长", "亲密关系"]
 categories: ["生活思考"]
+locked: true
+passwordHash: "9df2308c15f6ca21cf2fd082fba26949508c83d5c0285bea8c90fdf7b3e1dd16"
+lockAdminHash: "cb91cd7115499c7a7d4669f82f918dd0975d309d304d0e9607e86f69d9018139"
+hideSummary: true
+searchHidden: true
+robotsNoIndex: true
 ---
 
 本文来自对北邮人论坛 Feeling 版帖子「春天的尾巴」的整理与延展：
