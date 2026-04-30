@@ -291,6 +291,69 @@
     </section>
     {{- end }}
 
+    {{- if not $passwordHash }}
+    <div class="post-client-lock" data-client-lock hidden>
+      <style>
+        body.has-client-lock { overflow: auto; }
+        body.has-client-lock .post-single { display: flex; flex-direction: column; }
+        body.has-client-lock .post-header { padding-bottom: 0; border-bottom: none; }
+        .post-client-lock { flex: 1; margin: 0; }
+        .post-client-lock[hidden] { display: none !important; }
+      </style>
+      <div class="post-lock-overlay">
+        <div class="post-lock-panel">
+          <svg class="post-lock-icon" xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <p class="post-lock-title">这篇文章已锁定</p>
+          <p class="post-lock-description">输入访问密码后继续阅读。</p>
+          <button class="post-lock-button" type="button" data-client-open-unlock>输入密码</button>
+          <p style="margin-top:14px;font-size:0.82rem;text-align:center">
+            <button type="button" class="post-lock-secondary" data-client-open-remove style="padding:4px 10px;min-height:0;font-size:0.82rem">管理解锁</button>
+          </p>
+        </div>
+      </div>
+      <div class="post-lock-toolbar" data-client-toolbar hidden>
+        <button class="post-lock-secondary" type="button" data-client-rehide>重新隐藏正文</button>
+      </div>
+      <dialog class="post-lock-dialog" data-client-unlock-dialog>
+        <form class="post-lock-form" data-client-unlock-form>
+          <p class="post-lock-form-title">输入访问密码</p>
+          <input class="post-lock-input" type="password" inputmode="numeric" autocomplete="current-password" placeholder="访问密码" aria-label="访问密码">
+          <p class="post-lock-error" role="status" aria-live="polite"></p>
+          <div class="post-lock-form-actions">
+            <button class="post-lock-secondary" type="button" data-client-close>取消</button>
+            <button class="post-lock-button" type="submit">打开阅读</button>
+          </div>
+        </form>
+      </dialog>
+    </div>
+    <dialog class="post-lock-dialog" data-client-set-lock-dialog>
+      <form class="post-lock-form" data-client-set-lock-form>
+        <p class="post-lock-form-title">锁定文章</p>
+        <input class="post-lock-input" type="password" autocomplete="current-password" placeholder="管理密码" aria-label="管理密码" data-admin-field>
+        <input class="post-lock-input" type="password" autocomplete="new-password" placeholder="访问密码（读者使用）" aria-label="访问密码" data-access-field style="margin-top:4px">
+        <p class="post-lock-error" role="status" aria-live="polite"></p>
+        <div class="post-lock-form-actions">
+          <button class="post-lock-secondary" type="button" data-client-close>取消</button>
+          <button class="post-lock-button" type="submit">确认锁定</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog class="post-lock-dialog" data-client-remove-lock-dialog>
+      <form class="post-lock-form" data-client-remove-lock-form>
+        <p class="post-lock-form-title">解除锁定</p>
+        <input class="post-lock-input" type="password" autocomplete="current-password" placeholder="管理密码" aria-label="管理密码">
+        <p class="post-lock-error" role="status" aria-live="polite"></p>
+        <div class="post-lock-form-actions">
+          <button class="post-lock-secondary" type="button" data-client-close>取消</button>
+          <button class="post-lock-button" type="submit">解除</button>
+        </div>
+      </form>
+    </dialog>
+    {{- end }}
+
     {{- if .Content }}{{ if $lockedPost }}<template data-lock-source="content">{{ end }}
     <div class="post-content"{{ if $passwordHash }} data-protected-content hidden{{ end }}>
       <div class="post-heading-stack" aria-label="当前标题路径"></div>
@@ -323,38 +386,178 @@
 
     <script>
       (function () {
+        var ADMIN_HASH = "cb91cd7115499c7a7d4669f82f918dd0975d309d304d0e9607e86f69d9018139";
         var ctrl = document.querySelector("[data-post-ctrl]");
-        if (!ctrl || !ctrl.hasAttribute("data-has-server-lock")) return;
+        if (!ctrl || !window.crypto || !crypto.subtle) return;
 
+        var postId = ctrl.getAttribute("data-post-ctrl");
+        var hasServer = ctrl.hasAttribute("data-has-server-lock");
         var btn = ctrl.querySelector("[data-ctrl-btn]");
         var label = ctrl.querySelector("[data-ctrl-label]");
         var iconLocked = ctrl.querySelector("[data-ctrl-icon-locked]");
         var iconUnlocked = ctrl.querySelector("[data-ctrl-icon-unlocked]");
-        var serverOverlay = document.querySelector("[data-lock-overlay]");
+
+        function toHex(buf) {
+          return Array.prototype.map.call(new Uint8Array(buf), function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+        }
+        async function sha256(val) {
+          return toHex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(val)));
+        }
+
+        if (hasServer) {
+          var serverOverlay = document.querySelector("[data-lock-overlay]");
+          function updateServerBtn() {
+            if (!btn) return;
+            if (serverOverlay && serverOverlay.hidden) {
+              btn.style.display = ""; btn.setAttribute("data-state", "reading");
+              if (label) label.textContent = "重新隐藏";
+              if (iconLocked) iconLocked.style.display = ""; if (iconUnlocked) iconUnlocked.style.display = "none";
+            } else { btn.style.display = "none"; }
+          }
+          if (serverOverlay) new MutationObserver(updateServerBtn).observe(serverOverlay, { attributes: true, attributeFilter: ["hidden"] });
+          updateServerBtn();
+          btn && btn.addEventListener("click", function () {
+            if (serverOverlay && serverOverlay.hidden) { var r = document.querySelector("[data-open-lock-admin]"); if (r) r.click(); }
+          });
+          return;
+        }
+
+        // --- Client-lock ---
+        var clientLock = document.querySelector("[data-client-lock]");
+        var clientToolbar = clientLock ? clientLock.querySelector("[data-client-toolbar]") : null;
+        var postContent = document.querySelector(".post-content");
+        var postFooter = document.querySelector(".post-footer");
+        var postToc = document.querySelector(".post-sidebar-inner .article-toc");
+        var lockKey = "nobodyls:cpost-lock:" + postId;
+        var hashKey = "nobodyls:cpost-hash:" + postId;
+        var sessionReading = false;
+
+        var tocPlaceholder = null;
+        if (postToc) {
+          tocPlaceholder = document.createElement("div");
+          tocPlaceholder.className = "post-lock-toc-placeholder";
+          tocPlaceholder.innerHTML = '<p class="post-lock-toc-label">目录</p>';
+          tocPlaceholder.hidden = true;
+          postToc.parentNode.insertBefore(tocPlaceholder, postToc);
+        }
+
+        function isLocked() { return !!localStorage.getItem(lockKey); }
+
+        function applyLockUI() {
+          if (clientLock) clientLock.hidden = false;
+          if (clientToolbar) clientToolbar.hidden = true;
+          if (postContent) postContent.hidden = true;
+          if (postFooter) postFooter.hidden = true;
+          if (postToc) postToc.hidden = true;
+          if (tocPlaceholder) tocPlaceholder.hidden = false;
+          document.body.classList.add("has-client-lock");
+        }
+        function removeLockUI() {
+          if (clientLock) clientLock.hidden = true;
+          if (clientToolbar) clientToolbar.hidden = false;
+          if (postContent) postContent.hidden = false;
+          if (postFooter) postFooter.hidden = false;
+          if (postToc) postToc.hidden = false;
+          if (tocPlaceholder) tocPlaceholder.hidden = true;
+          document.body.classList.remove("has-client-lock");
+        }
 
         function updateBtn() {
           if (!btn) return;
-          if (serverOverlay && serverOverlay.hidden) {
-            btn.style.display = "";
-            btn.setAttribute("data-state", "reading");
-            if (label) label.textContent = "重新隐藏";
-            if (iconLocked) iconLocked.style.display = "";
-            if (iconUnlocked) iconUnlocked.style.display = "none";
+          if (isLocked()) {
+            if (sessionReading) {
+              btn.style.display = ""; btn.setAttribute("data-state", "reading");
+              if (label) label.textContent = "重新隐藏";
+              if (iconLocked) iconLocked.style.display = ""; if (iconUnlocked) iconUnlocked.style.display = "none";
+            } else { btn.style.display = "none"; }
           } else {
-            btn.style.display = "none";
+            btn.style.display = ""; btn.setAttribute("data-state", "unlocked");
+            if (label) label.textContent = "锁定";
+            if (iconLocked) iconLocked.style.display = "none"; if (iconUnlocked) iconUnlocked.style.display = "";
           }
         }
 
-        if (serverOverlay) {
-          new MutationObserver(updateBtn).observe(serverOverlay, { attributes: true, attributeFilter: ["hidden"] });
-        }
+        if (isLocked()) { applyLockUI(); }
         updateBtn();
 
+        function closeAll() {
+          document.querySelectorAll("[data-client-unlock-dialog],[data-client-set-lock-dialog],[data-client-remove-lock-dialog]").forEach(function (d) {
+            if (d.open && d.close) d.close();
+            d.querySelectorAll("input").forEach(function (i) { i.value = ""; });
+            d.querySelectorAll(".post-lock-error").forEach(function (e) { e.textContent = ""; });
+          });
+        }
+        function openDlg(sel) {
+          closeAll();
+          var d = document.querySelector(sel);
+          if (d && d.showModal) { d.showModal(); setTimeout(function () { var i = d.querySelector("input"); if (i) i.focus(); }, 0); }
+        }
+
+        document.querySelectorAll("[data-client-close]").forEach(function (b) { b.addEventListener("click", closeAll); });
+
         btn && btn.addEventListener("click", function () {
-          if (serverOverlay && serverOverlay.hidden) {
-            var rehideBtn = document.querySelector("[data-open-lock-admin]");
-            if (rehideBtn) rehideBtn.click();
+          if (isLocked() && sessionReading) {
+            sessionReading = false; applyLockUI(); updateBtn();
+          } else if (!isLocked()) {
+            openDlg("[data-client-set-lock-dialog]");
           }
+        });
+
+        // Reader: enter access password
+        var uDlg = document.querySelector("[data-client-unlock-dialog]");
+        var uForm = uDlg ? uDlg.querySelector("[data-client-unlock-form]") : null;
+        var openUnlockBtn = clientLock ? clientLock.querySelector("[data-client-open-unlock]") : null;
+        openUnlockBtn && openUnlockBtn.addEventListener("click", function () { openDlg("[data-client-unlock-dialog]"); });
+        uForm && uForm.addEventListener("submit", async function (e) {
+          e.preventDefault();
+          var err = uForm.querySelector(".post-lock-error"); if (err) err.textContent = "";
+          var inp = uForm.querySelector("input");
+          var stored = localStorage.getItem(hashKey); if (!stored) return;
+          var actual = await sha256(inp ? inp.value : "");
+          if (actual !== stored) {
+            if (err) err.textContent = "访问密码不正确。"; if (inp) inp.select(); return;
+          }
+          closeAll(); sessionReading = true; removeLockUI(); updateBtn();
+        });
+
+        // Admin: set lock + access password
+        var slForm = document.querySelector("[data-client-set-lock-form]");
+        slForm && slForm.addEventListener("submit", async function (e) {
+          e.preventDefault();
+          var err = slForm.querySelector(".post-lock-error"); if (err) err.textContent = "";
+          var adminInp = slForm.querySelector("[data-admin-field]");
+          var accessInp = slForm.querySelector("[data-access-field]");
+          var adminActual = await sha256(adminInp ? adminInp.value : "");
+          if (adminActual !== ADMIN_HASH) {
+            if (err) err.textContent = "管理密码不正确。"; if (adminInp) adminInp.select(); return;
+          }
+          var pw = accessInp ? accessInp.value.trim() : "";
+          if (!pw) { if (err) err.textContent = "请输入访问密码。"; if (accessInp) accessInp.focus(); return; }
+          localStorage.setItem(lockKey, "locked");
+          localStorage.setItem(hashKey, await sha256(pw));
+          sessionReading = false; closeAll(); applyLockUI(); updateBtn();
+        });
+
+        // Admin: remove lock permanently
+        var rlForm = document.querySelector("[data-client-remove-lock-form]");
+        var openRemoveBtn = clientLock ? clientLock.querySelector("[data-client-open-remove]") : null;
+        openRemoveBtn && openRemoveBtn.addEventListener("click", function () { openDlg("[data-client-remove-lock-dialog]"); });
+        rlForm && rlForm.addEventListener("submit", async function (e) {
+          e.preventDefault();
+          var err = rlForm.querySelector(".post-lock-error"); if (err) err.textContent = "";
+          var inp = rlForm.querySelector("input");
+          var actual = await sha256(inp ? inp.value : "");
+          if (actual !== ADMIN_HASH) {
+            if (err) err.textContent = "管理密码不正确。"; if (inp) inp.select(); return;
+          }
+          localStorage.removeItem(lockKey); localStorage.removeItem(hashKey);
+          sessionReading = false; closeAll(); removeLockUI(); updateBtn();
+        });
+
+        // Toolbar re-hide
+        var rehideBtn = clientLock ? clientLock.querySelector("[data-client-rehide]") : null;
+        rehideBtn && rehideBtn.addEventListener("click", function () {
+          sessionReading = false; applyLockUI(); updateBtn();
         });
       })();
     </script>
