@@ -204,9 +204,9 @@
         <button class="post-client-lock-button" type="button" data-client-lock-open>锁定本文</button>
         <dialog class="post-client-lock-dialog" data-client-lock-dialog>
           <form class="post-client-lock-form" data-client-lock-form>
-            <p class="post-client-lock-title">设置本机锁定密码</p>
-            <p class="post-client-lock-description">锁定只保存在当前浏览器中，刷新后仍会要求输入这次设置的密码。</p>
-            <input class="post-client-lock-input" type="password" autocomplete="new-password" placeholder="本机锁定密码" aria-label="本机锁定密码">
+            <p class="post-client-lock-title" data-client-lock-dialog-title>确认锁定本文</p>
+            <p class="post-client-lock-description" data-client-lock-dialog-description>输入管理密码后，本文会在当前浏览器进入锁定状态。</p>
+            <input class="post-client-lock-input" type="password" autocomplete="current-password" placeholder="管理密码" aria-label="管理密码">
             <p class="post-client-lock-error" role="status" aria-live="polite"></p>
             <div class="post-client-lock-actions">
               <button class="post-client-lock-secondary" type="button" data-client-lock-close>取消</button>
@@ -216,11 +216,11 @@
         </dialog>
         <div class="post-client-lock-overlay" data-client-lock-overlay hidden>
           <form class="post-client-lock-panel" data-client-unlock-form>
-            <p class="post-client-lock-title">本文已在本机锁定</p>
-            <p class="post-client-lock-description">输入你刚才设置的本机密码后继续阅读。</p>
-            <input class="post-client-lock-input" type="password" autocomplete="current-password" placeholder="本机锁定密码" aria-label="本机锁定密码">
+            <p class="post-client-lock-title">本文已锁定</p>
+            <p class="post-client-lock-description">输入查看密码后可以临时阅读，但不会取消本文的锁定状态。</p>
+            <input class="post-client-lock-input" type="password" inputmode="numeric" autocomplete="current-password" placeholder="查看密码" aria-label="查看密码">
             <p class="post-client-lock-error" role="status" aria-live="polite"></p>
-            <button class="post-client-lock-primary" type="submit">解锁</button>
+            <button class="post-client-lock-primary" type="submit">打开阅读</button>
           </form>
         </div>
       </section>
@@ -295,18 +295,33 @@
             if (section.dataset.clientLockReady === "true") return;
             section.dataset.clientLockReady = "true";
 
-            var key = "nobodyls:client-post-lock:" + section.getAttribute("data-client-lock");
+            var lockKey = "nobodyls:client-post-lock:" + section.getAttribute("data-client-lock");
+            var adminHash = "cb91cd7115499c7a7d4669f82f918dd0975d309d304d0e9607e86f69d9018139";
+            var viewHash = "9df2308c15f6ca21cf2fd082fba26949508c83d5c0285bea8c90fdf7b3e1dd16";
             var openButton = section.querySelector("[data-client-lock-open]");
             var dialog = section.querySelector("[data-client-lock-dialog]");
             var lockForm = section.querySelector("[data-client-lock-form]");
             var lockInput = lockForm ? lockForm.querySelector("input") : null;
             var lockError = lockForm ? lockForm.querySelector(".post-client-lock-error") : null;
+            var dialogTitle = section.querySelector("[data-client-lock-dialog-title]");
+            var dialogDescription = section.querySelector("[data-client-lock-dialog-description]");
             var overlay = section.querySelector("[data-client-lock-overlay]");
             var unlockForm = section.querySelector("[data-client-unlock-form]");
             var unlockInput = unlockForm ? unlockForm.querySelector("input") : null;
             var unlockError = unlockForm ? unlockForm.querySelector(".post-client-lock-error") : null;
+            var pendingAction = "lock";
 
-            function applyLockedState() {
+            function isLocked() {
+              return localStorage.getItem(lockKey) === "locked";
+            }
+
+            function updateButton() {
+              if (!openButton) return;
+              openButton.textContent = isLocked() ? "取消锁定" : "锁定本文";
+              openButton.setAttribute("aria-pressed", isLocked() ? "true" : "false");
+            }
+
+            function showLockedOverlay() {
               setOverlayTop(section);
               if (overlay) overlay.hidden = false;
               document.body.classList.add("has-client-post-lock");
@@ -315,10 +330,21 @@
               }
             }
 
-            function clearLockedState() {
+            function hideLockedOverlay() {
               if (overlay) overlay.hidden = true;
               document.body.classList.remove("has-client-post-lock");
               if (unlockInput) unlockInput.value = "";
+            }
+
+            function setDialogCopy(action) {
+              if (!dialogTitle || !dialogDescription) return;
+              if (action === "unlock") {
+                dialogTitle.textContent = "确认取消锁定";
+                dialogDescription.textContent = "输入管理密码后，本文会在当前浏览器取消锁定。";
+              } else {
+                dialogTitle.textContent = "确认锁定本文";
+                dialogDescription.textContent = "输入管理密码后，本文会在当前浏览器进入锁定状态。";
+              }
             }
 
             if (!window.crypto || !crypto.subtle) {
@@ -329,13 +355,17 @@
             setOverlayTop(section);
             window.addEventListener("resize", function () { setOverlayTop(section); });
 
-            if (localStorage.getItem(key)) {
-              applyLockedState();
+            updateButton();
+
+            if (isLocked()) {
+              showLockedOverlay();
             }
 
             if (openButton) {
               openButton.addEventListener("click", function () {
                 if (lockError) lockError.textContent = "";
+                pendingAction = isLocked() ? "unlock" : "lock";
+                setDialogCopy(pendingAction);
                 openDialog(dialog, lockInput);
               });
             }
@@ -350,14 +380,24 @@
               lockForm.addEventListener("submit", async function (event) {
                 event.preventDefault();
                 if (lockError) lockError.textContent = "";
-                if (!lockInput || !lockInput.value) {
-                  if (lockError) lockError.textContent = "请先设置一个本机锁定密码。";
+                var actualHash = await hash(lockInput ? lockInput.value : "");
+                if (actualHash !== adminHash) {
+                  if (lockError) lockError.textContent = "管理密码不正确。";
+                  if (lockInput) lockInput.select();
                   return;
                 }
-                localStorage.setItem(key, await hash(lockInput.value));
-                lockInput.value = "";
+
+                if (pendingAction === "unlock") {
+                  localStorage.removeItem(lockKey);
+                  hideLockedOverlay();
+                } else {
+                  localStorage.setItem(lockKey, "locked");
+                  showLockedOverlay();
+                }
+
+                if (lockInput) lockInput.value = "";
                 closeDialog(dialog);
-                applyLockedState();
+                updateButton();
               });
             }
 
@@ -365,13 +405,11 @@
               unlockForm.addEventListener("submit", async function (event) {
                 event.preventDefault();
                 if (unlockError) unlockError.textContent = "";
-                var expectedHash = localStorage.getItem(key);
                 var actualHash = await hash(unlockInput ? unlockInput.value : "");
-                if (expectedHash && actualHash === expectedHash) {
-                  localStorage.removeItem(key);
-                  clearLockedState();
+                if (isLocked() && actualHash === viewHash) {
+                  hideLockedOverlay();
                 } else if (unlockError) {
-                  unlockError.textContent = "密码不正确。";
+                  unlockError.textContent = "查看密码不正确。";
                   if (unlockInput) unlockInput.select();
                 }
               });
