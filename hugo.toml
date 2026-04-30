@@ -1,4 +1,4 @@
-baseURL = 'https://www.nobodyls.cn/'
+baseURL = 'https://blog.nobodyls.cn/'
 languageCode = 'zh-cn'
 title = 'Nobodyls 的技术日志'
 theme = 'PaperMod'
