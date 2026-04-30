@@ -4,15 +4,16 @@
 {{- $hasArticleToc := and (.Param "ShowToc") (ge (len $headers) 1) -}}
 {{- $passwordHash := .Param "passwordHash" -}}
 {{- $lockAdminHash := .Param "lockAdminHash" -}}
+{{- $lockedPost := or (.Param "locked") $passwordHash -}}
 
 <div class="post-layout{{- if $hasArticleToc }} post-layout--with-toc post-layout--viewport{{- end }}">
-  {{- if $hasArticleToc }}
+  {{- if $hasArticleToc }}{{ if $lockedPost }}<template data-lock-source="sidebar">{{ end }}
   <aside class="post-sidebar" aria-label="目录">
     <div class="post-sidebar-inner">
       {{- partial "article_toc.html" . }}
     </div>
   </aside>
-  {{- end }}
+  {{- if $lockedPost }}</template>{{ end }}{{ end }}
 
   <article class="post-single">
     <header class="post-header">
@@ -47,32 +48,100 @@
     {{- partial "cover.html" (dict "cxt" . "IsSingle" true "isHidden" $isHidden) }}
 
     {{- if $passwordHash }}
-    <section class="post-lock" data-post-lock="{{ .RelPermalink | md5 }}" data-password-hash="{{ $passwordHash }}">
+    <section class="post-lock" data-post-lock="{{ .RelPermalink | md5 }}" data-password-hash="{{ $passwordHash }}" data-lock-admin-hash="{{ $lockAdminHash }}" aria-label="文章锁定">
       <style>
+        body.has-post-lock {
+          overflow: hidden;
+        }
         .post-lock {
-          margin: 28px 0;
+          --post-lock-top: 64px;
+          margin: 0;
+        }
+        .post-lock[hidden],
+        .post-lock [hidden] {
+          display: none !important;
+        }
+        .post-lock-overlay {
+          position: fixed;
+          inset: var(--post-lock-top) 0 0;
+          z-index: 80;
+          display: grid;
+          place-items: center;
+          padding: 24px;
+          background: color-mix(in srgb, var(--theme) 86%, transparent);
+          backdrop-filter: blur(12px);
+        }
+        .post-lock-panel {
+          width: min(420px, 100%);
           padding: 22px;
+          color: var(--primary);
+          background: var(--entry);
           border: 1px solid var(--border);
           border-radius: 8px;
-          background: var(--entry);
+          box-shadow: 0 18px 50px rgb(0 0 0 / 18%);
         }
         .post-lock-title {
           margin: 0 0 8px;
-          font-size: 1.15rem;
+          font-size: 1.1rem;
           font-weight: 700;
         }
         .post-lock-description {
-          margin: 0 0 16px;
+          margin: 0 0 18px;
           color: var(--secondary);
+          line-height: 1.6;
+        }
+        .post-lock-button,
+        .post-lock-secondary {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 40px;
+          padding: 8px 14px;
+          border-radius: 8px;
+          font: inherit;
+          font-weight: 700;
+          cursor: pointer;
+        }
+        .post-lock-button {
+          color: var(--theme);
+          background: var(--primary);
+          border: 1px solid var(--primary);
+        }
+        .post-lock-secondary {
+          color: var(--primary);
+          background: var(--theme);
+          border: 1px solid var(--border);
+        }
+        .post-lock-toolbar {
+          display: flex;
+          justify-content: flex-end;
+          margin: 0 0 18px;
+        }
+        .post-lock-dialog {
+          width: min(420px, calc(100vw - 32px));
+          padding: 0;
+          color: var(--primary);
+          background: var(--entry);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          box-shadow: 0 24px 70px rgb(0 0 0 / 28%);
+        }
+        .post-lock-dialog::backdrop {
+          background: rgb(0 0 0 / 42%);
+          backdrop-filter: blur(4px);
         }
         .post-lock-form {
-          display: flex;
-          gap: 10px;
-          align-items: center;
-          flex-wrap: wrap;
+          display: grid;
+          gap: 14px;
+          padding: 22px;
+        }
+        .post-lock-form-title {
+          margin: 0;
+          font-size: 1.05rem;
+          font-weight: 700;
         }
         .post-lock-input {
-          min-width: min(260px, 100%);
+          width: 100%;
           padding: 10px 12px;
           color: var(--primary);
           background: var(--theme);
@@ -80,74 +149,65 @@
           border-radius: 8px;
           font: inherit;
         }
-        .post-lock-button {
-          padding: 10px 14px;
-          color: var(--theme);
-          background: var(--primary);
-          border: 1px solid var(--primary);
-          border-radius: 8px;
-          font: inherit;
-          font-weight: 700;
-          cursor: pointer;
+        .post-lock-form-actions {
+          display: flex;
+          gap: 10px;
+          justify-content: flex-end;
+          flex-wrap: wrap;
         }
         .post-lock-error {
-          width: 100%;
           min-height: 1.5em;
-          margin: 4px 0 0;
+          margin: 0;
           color: #b42318;
         }
-        .post-lock-actions {
-          display: flex;
-          justify-content: flex-end;
-          margin: 18px 0 0;
-        }
-        .post-lock-admin {
-          margin: 18px 0 0;
-          padding: 16px;
-          border: 1px solid var(--border);
-          border-radius: 8px;
-          background: var(--code-bg);
-        }
-        .post-lock-secondary {
-          padding: 8px 12px;
-          color: var(--primary);
-          background: transparent;
-          border: 1px solid var(--border);
-          border-radius: 8px;
-          font: inherit;
-          cursor: pointer;
-        }
       </style>
-      <p class="post-lock-title" data-lock-title>这篇文章已锁定</p>
-      <p class="post-lock-description" data-lock-description>请输入访问密码查看正文。</p>
-      <form class="post-lock-form" data-unlock-form>
-        <input class="post-lock-input" type="password" inputmode="numeric" autocomplete="current-password" placeholder="访问密码" aria-label="访问密码">
-        <button class="post-lock-button" type="submit">解锁</button>
-        <p class="post-lock-error" role="status" aria-live="polite"></p>
-      </form>
-      {{- if $lockAdminHash }}
-      <div class="post-lock-actions" data-lock-actions hidden>
+      <div class="post-lock-overlay" data-lock-overlay>
+        <div class="post-lock-panel">
+          <p class="post-lock-title">这篇文章已锁定</p>
+          <p class="post-lock-description">正文和目录已加密，需要输入访问密码后才会在浏览器中解密显示。</p>
+          <button class="post-lock-button" type="button" data-open-unlock>输入密码</button>
+        </div>
+      </div>
+      <div class="post-lock-toolbar" data-lock-toolbar hidden>
         <button class="post-lock-secondary" type="button" data-open-lock-admin>重新锁定</button>
       </div>
-      <form class="post-lock-form post-lock-admin" data-lock-form hidden>
-        <input class="post-lock-input" type="password" autocomplete="current-password" placeholder="管理密码" aria-label="管理密码">
-        <button class="post-lock-button" type="submit">确认锁定</button>
-        <button class="post-lock-secondary" type="button" data-cancel-lock>取消</button>
-        <p class="post-lock-error" role="status" aria-live="polite"></p>
-      </form>
+      <dialog class="post-lock-dialog" data-unlock-dialog>
+        <form class="post-lock-form" data-unlock-form>
+          <p class="post-lock-form-title">输入访问密码</p>
+          <input class="post-lock-input" type="password" inputmode="numeric" autocomplete="current-password" placeholder="访问密码" aria-label="访问密码">
+          <p class="post-lock-error" role="status" aria-live="polite"></p>
+          <div class="post-lock-form-actions">
+            <button class="post-lock-secondary" type="button" data-close-dialog>取消</button>
+            <button class="post-lock-button" type="submit">解锁</button>
+          </div>
+        </form>
+      </dialog>
+      {{- if $lockAdminHash }}
+      <dialog class="post-lock-dialog" data-lock-dialog>
+        <form class="post-lock-form" data-lock-form>
+          <p class="post-lock-form-title">确认重新锁定</p>
+          <input class="post-lock-input" type="password" autocomplete="current-password" placeholder="管理密码" aria-label="管理密码">
+          <p class="post-lock-error" role="status" aria-live="polite"></p>
+          <div class="post-lock-form-actions">
+            <button class="post-lock-secondary" type="button" data-close-dialog>取消</button>
+            <button class="post-lock-button" type="submit">锁定</button>
+          </div>
+        </form>
+      </dialog>
       {{- end }}
     </section>
     {{- end }}
 
-    {{- if .Content }}
+    {{- if .Content }}{{ if $lockedPost }}<template data-lock-source="content">{{ end }}
     <div class="post-content"{{ if $passwordHash }} data-protected-content hidden{{ end }}>
       <div class="post-heading-stack" aria-label="当前标题路径"></div>
       {{- if not (.Param "disableAnchoredHeadings") }}
       {{- partial "anchored_headings.html" .Content -}}
       {{- else }}{{ .Content }}{{ end }}
     </div>
-    {{- end }}
+    {{- if $lockedPost }}</template>{{ end }}{{ end }}
 
+    {{- if $lockedPost }}<template data-lock-source="footer">{{ end }}
     <footer class="post-footer"{{ if $passwordHash }} data-protected-content hidden{{ end }}>
       {{- $tags := .Language.Params.Taxonomies.tag | default "tags" }}
       <ul class="post-tags">
@@ -162,6 +222,7 @@
       {{- partial "share_icons.html" . -}}
       {{- end }}
     </footer>
+    {{- if $lockedPost }}</template>{{ end }}
 
     {{- if (.Param "comments") }}
     {{- partial "comments.html" . }}
@@ -172,47 +233,45 @@
       (function () {
         var lock = document.querySelector("[data-post-lock]");
         if (!lock) return;
-        var storageKey = "post-lock:" + lock.getAttribute("data-post-lock");
-        var expectedHash = lock.getAttribute("data-password-hash");
-        var protectedNodes = document.querySelectorAll("[data-protected-content]");
+
+        var overlay = lock.querySelector("[data-lock-overlay]");
+        var openUnlock = lock.querySelector("[data-open-unlock]");
+        var unlockDialog = lock.querySelector("[data-unlock-dialog]");
         var unlockForm = lock.querySelector("[data-unlock-form]");
         var unlockInput = unlockForm.querySelector("input");
         var unlockError = unlockForm.querySelector(".post-lock-error");
-        var lockActions = lock.querySelector("[data-lock-actions]");
-        var lockForm = lock.querySelector("[data-lock-form]");
+        var toolbar = lock.querySelector("[data-lock-toolbar]");
         var openLockAdmin = lock.querySelector("[data-open-lock-admin]");
-        var cancelLock = lock.querySelector("[data-cancel-lock]");
-        var lockTitle = lock.querySelector("[data-lock-title]");
-        var lockDescription = lock.querySelector("[data-lock-description]");
-        var adminHash = "{{ $lockAdminHash }}";
+        var lockDialog = lock.querySelector("[data-lock-dialog]");
+        var lockForm = lock.querySelector("[data-lock-form]");
+        var encryptedNode = document.querySelector("[data-encrypted-post]");
+        var contentSlot = document.querySelector('[data-protected-slot="content"]');
+        var footerSlot = document.querySelector('[data-protected-slot="footer"]');
+        var adminHash = lock.getAttribute("data-lock-admin-hash") || "";
 
-        function reveal() {
-          protectedNodes.forEach(function (node) {
-            node.hidden = false;
-          });
-          unlockForm.hidden = true;
-          lockTitle.textContent = "这篇文章已解锁";
-          lockDescription.textContent = "正文内容已在当前浏览器中显示。";
-          if (lockActions) lockActions.hidden = false;
-          lock.hidden = false;
+        function setOverlayTop() {
+          var header = document.querySelector("body > header") || document.querySelector(".header");
+          var height = header ? Math.ceil(header.getBoundingClientRect().height) : 64;
+          lock.style.setProperty("--post-lock-top", height + "px");
         }
 
-        function lockAgain() {
-          protectedNodes.forEach(function (node) {
-            node.hidden = true;
-          });
-          localStorage.removeItem(storageKey);
-          unlockForm.hidden = false;
-          unlockInput.value = "";
-          lockTitle.textContent = "这篇文章已锁定";
-          lockDescription.textContent = "请输入访问密码查看正文。";
-          if (lockActions) lockActions.hidden = true;
-          if (lockForm) {
-            lockForm.hidden = true;
-            lockForm.reset();
+        function openDialog(dialog, input) {
+          if (!dialog) return;
+          if (typeof dialog.showModal === "function") {
+            dialog.showModal();
+          } else {
+            dialog.removeAttribute("hidden");
           }
-          lock.hidden = false;
-          unlockInput.focus();
+          if (input) window.setTimeout(function () { input.focus(); }, 0);
+        }
+
+        function closeDialog(dialog) {
+          if (!dialog) return;
+          if (typeof dialog.close === "function") {
+            dialog.close();
+          } else {
+            dialog.setAttribute("hidden", "");
+          }
         }
 
         function toHex(buffer) {
@@ -221,45 +280,106 @@
           }).join("");
         }
 
+        function fromBase64(value) {
+          return Uint8Array.from(atob(value), function (char) { return char.charCodeAt(0); });
+        }
+
+        function fromHex(value) {
+          var bytes = new Uint8Array(value.length / 2);
+          for (var index = 0; index < bytes.length; index += 1) {
+            bytes[index] = parseInt(value.slice(index * 2, index * 2 + 2), 16);
+          }
+          return bytes;
+        }
+
         async function hash(value) {
           var data = new TextEncoder().encode(value);
           return toHex(await crypto.subtle.digest("SHA-256", data));
         }
 
-        if (localStorage.getItem(storageKey) === expectedHash) {
-          reveal();
+        async function decryptPost(password) {
+          encryptedNode = encryptedNode || document.querySelector("[data-encrypted-post]");
+          if (!encryptedNode) {
+            throw new Error("missing-payload");
+          }
+          var payload = JSON.parse(encryptedNode.textContent || "{}");
+          var keyHex = await hash(password || "");
+          var key = await crypto.subtle.importKey(
+            "raw",
+            fromHex(keyHex),
+            { name: "AES-GCM" },
+            false,
+            ["decrypt"]
+          );
+          var plainBuffer = await crypto.subtle.decrypt(
+            { name: "AES-GCM", iv: fromBase64(payload.iv) },
+            key,
+            fromBase64(payload.ciphertext)
+          );
+          return JSON.parse(new TextDecoder().decode(plainBuffer));
+        }
+
+        function revealPost(payload) {
+          var layout = document.querySelector(".post-layout");
+          if (payload.sidebarHtml && layout && !layout.querySelector(".post-sidebar")) {
+            layout.insertAdjacentHTML("afterbegin", payload.sidebarHtml);
+          }
+          if (contentSlot && payload.contentHtml) {
+            contentSlot.outerHTML = payload.contentHtml.replace(/\sdata-protected-content(?:=\"\")?/, "").replace(/\shidden(?:=\"\")?/, "");
+          }
+          if (footerSlot && payload.footerHtml) {
+            footerSlot.outerHTML = payload.footerHtml.replace(/\sdata-protected-content(?:=\"\")?/, "").replace(/\shidden(?:=\"\")?/, "");
+          }
+          if (overlay) overlay.hidden = true;
+          if (toolbar) toolbar.hidden = false;
+          document.body.classList.remove("has-post-lock");
+          closeDialog(unlockDialog);
+          if (typeof window.initPostViewportNav === "function") {
+            try {
+              window.initPostViewportNav();
+            } catch (error) {
+              console.warn("Post viewport navigation init failed.", error);
+            }
+          }
+        }
+
+        setOverlayTop();
+        window.addEventListener("resize", setOverlayTop);
+        document.body.classList.add("has-post-lock");
+
+        if (!window.crypto || !crypto.subtle) {
+          unlockError.textContent = "当前浏览器不支持本地解密。";
           return;
         }
 
-        if (!window.crypto || !crypto.subtle) {
-          unlockError.textContent = "当前浏览器不支持本地密码校验。";
-          return;
-        }
+        openUnlock.addEventListener("click", function () {
+          openDialog(unlockDialog, unlockInput);
+        });
+
+        lock.querySelectorAll("[data-close-dialog]").forEach(function (button) {
+          button.addEventListener("click", function () {
+            closeDialog(button.closest("dialog"));
+          });
+        });
 
         unlockForm.addEventListener("submit", async function (event) {
           event.preventDefault();
           unlockError.textContent = "";
-          var actualHash = await hash(unlockInput.value || "");
-          if (actualHash === expectedHash) {
-            localStorage.setItem(storageKey, expectedHash);
-            reveal();
-          } else {
+          var payload;
+          try {
+            payload = await decryptPost(unlockInput.value || "");
+          } catch (error) {
             unlockError.textContent = "密码不正确。";
             unlockInput.select();
+            return;
           }
+          unlockInput.value = "";
+          revealPost(payload);
         });
 
-        if (openLockAdmin && lockForm) {
+        if (openLockAdmin && lockDialog) {
           openLockAdmin.addEventListener("click", function () {
-            lockForm.hidden = false;
-            lockForm.querySelector("input").focus();
-          });
-        }
-
-        if (cancelLock && lockForm) {
-          cancelLock.addEventListener("click", function () {
-            lockForm.hidden = true;
-            lockForm.reset();
+            openDialog(lockDialog, lockForm ? lockForm.querySelector("input") : null);
           });
         }
 
@@ -271,7 +391,7 @@
             error.textContent = "";
             var actualHash = await hash(input.value || "");
             if (actualHash === adminHash) {
-              lockAgain();
+              window.location.reload();
             } else {
               error.textContent = "管理密码不正确。";
               input.select();
@@ -285,3 +405,7 @@
 </div>
 
 {{- end }}{{/* end main */}}
+
+
+
+

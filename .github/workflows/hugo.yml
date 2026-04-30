@@ -56,6 +56,8 @@ jobs:
           hugo \
             --minify \
             --baseURL "https://blog.nobodyls.cn/"
+      - name: Encrypt locked posts
+        run: node scripts/encrypt-locked-posts.js public
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -72,3 +74,5 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+
