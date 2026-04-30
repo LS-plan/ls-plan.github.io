@@ -7,13 +7,20 @@
 {{- $lockedPost := $passwordHash -}}
 
 <div class="post-layout{{- if $hasArticleToc }} post-layout--with-toc post-layout--viewport{{- end }}">
-  {{- if $hasArticleToc }}{{ if $lockedPost }}<template data-lock-source="sidebar">{{ end }}
+  {{- if $hasArticleToc }}
   <aside class="post-sidebar" aria-label="目录">
     <div class="post-sidebar-inner">
+      {{- if $lockedPost }}
+      <div data-toc-placeholder class="post-lock-toc-placeholder">
+        <p class="post-lock-toc-label">目录</p>
+      </div>
+      <template data-lock-source="sidebar">{{- partial "article_toc.html" . }}</template>
+      {{- else }}
       {{- partial "article_toc.html" . }}
+      {{- end }}
     </div>
   </aside>
-  {{- if $lockedPost }}</template>{{ end }}{{ end }}
+  {{- end }}
 
   <article class="post-single">
     <header class="post-header">
@@ -185,6 +192,18 @@
           margin: 0;
           color: #b42318;
         }
+        .post-lock-toc-placeholder {
+          padding: 4px 0 0;
+        }
+        .post-lock-toc-label {
+          margin: 0;
+          font-size: 0.82rem;
+          font-weight: 600;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          color: var(--secondary);
+          opacity: 0.45;
+        }
       </style>
       <div class="post-lock-overlay" data-lock-overlay>
         <div class="post-lock-panel">
@@ -344,7 +363,10 @@
 
         function revealPost(payload) {
           var layout = document.querySelector(".post-layout");
-          if (payload.sidebarHtml && layout && !layout.querySelector(".post-sidebar")) {
+          var tocPlaceholder = layout ? layout.querySelector("[data-toc-placeholder]") : null;
+          if (tocPlaceholder && payload.sidebarHtml) {
+            tocPlaceholder.outerHTML = payload.sidebarHtml;
+          } else if (payload.sidebarHtml && layout && !layout.querySelector(".post-sidebar")) {
             layout.insertAdjacentHTML("afterbegin", payload.sidebarHtml);
           }
           if (contentSlot && payload.contentHtml) {
