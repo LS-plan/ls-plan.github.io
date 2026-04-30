@@ -62,34 +62,68 @@
 
     <div class="post-ctrl" data-post-ctrl="{{ .RelPermalink | md5 }}"{{- if $passwordHash }} data-has-server-lock data-lock-admin-hash="{{ $lockAdminHash }}"{{- end }}>
       <style>
-        .post-ctrl {
-          display: flex;
-          justify-content: flex-end;
-          margin: -4px 0 16px;
-        }
+        /* ctrl button */
+        .post-ctrl { display: flex; justify-content: flex-end; margin: -4px 0 16px; }
         .post-ctrl-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          padding: 5px 10px;
-          font: inherit;
-          font-size: 0.82rem;
-          font-weight: 600;
-          cursor: pointer;
-          color: var(--secondary);
-          background: transparent;
-          border: 1px solid transparent;
-          border-radius: 6px;
+          display: inline-flex; align-items: center; gap: 5px;
+          padding: 5px 10px; font: inherit; font-size: 0.82rem; font-weight: 600;
+          cursor: pointer; color: var(--secondary); background: transparent;
+          border: 1px solid transparent; border-radius: 6px;
           transition: color 0.15s, border-color 0.15s, background 0.15s;
         }
-        .post-ctrl-btn:hover {
-          color: var(--primary);
-          border-color: var(--border);
-          background: var(--entry);
+        .post-ctrl-btn:hover { color: var(--primary); border-color: var(--border); background: var(--entry); }
+        .post-ctrl-btn[data-state="locked"], .post-ctrl-btn[data-state="reading"] { color: var(--primary); }
+        /* shared lock styles — used by both server-lock and client-lock */
+        body.has-post-lock, body.has-client-lock { overflow: auto; }
+        body.has-post-lock .post-single, body.has-client-lock .post-single { display: flex; flex-direction: column; }
+        body.has-post-lock .post-header, body.has-client-lock .post-header { padding-bottom: 0; border-bottom: none; }
+        .post-lock { flex: 1; margin: 0; }
+        .post-lock[hidden], .post-lock [hidden] { display: none !important; }
+        .post-client-lock { flex: 1; margin: 0; }
+        .post-client-lock[hidden] { display: none !important; }
+        .post-lock-overlay {
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          min-height: 280px; padding: 48px 0 64px;
         }
-        .post-ctrl-btn[data-state="locked"],
-        .post-ctrl-btn[data-state="reading"] {
-          color: var(--primary);
+        .post-lock-icon { display: block; margin: 0 auto 20px; color: var(--secondary); opacity: 0.5; }
+        .post-lock-panel {
+          width: min(400px, 100%); padding: 28px 28px 24px;
+          color: var(--primary); background: var(--entry);
+          border: 1px solid var(--border); border-radius: 12px;
+          box-shadow: 0 4px 24px rgb(0 0 0 / 14%); text-align: center;
+        }
+        .post-lock-title { margin: 0 0 8px; font-size: 1.05rem; font-weight: 700; }
+        .post-lock-description { margin: 0 0 20px; color: var(--secondary); line-height: 1.65; font-size: 0.88rem; }
+        .post-lock-button, .post-lock-secondary {
+          display: inline-flex; align-items: center; justify-content: center;
+          min-height: 40px; padding: 8px 20px; border-radius: 8px;
+          font: inherit; font-weight: 600; cursor: pointer; transition: opacity 0.15s;
+        }
+        .post-lock-button:hover, .post-lock-secondary:hover { opacity: 0.8; }
+        .post-lock-button { color: var(--theme); background: var(--primary); border: 1px solid var(--primary); }
+        .post-lock-secondary { color: var(--primary); background: var(--theme); border: 1px solid var(--border); }
+        .post-lock-toolbar { display: flex; justify-content: flex-end; margin: 0 0 18px; }
+        .post-lock-dialog {
+          width: min(420px, calc(100vw - 32px)); padding: 0;
+          color: var(--primary); background: var(--entry);
+          border: 1px solid var(--border); border-radius: 8px;
+          box-shadow: 0 24px 70px rgb(0 0 0 / 28%);
+        }
+        .post-lock-dialog::backdrop { background: rgb(0 0 0 / 42%); backdrop-filter: blur(4px); }
+        .post-lock-form { display: grid; gap: 14px; padding: 22px; }
+        .post-lock-form-title { margin: 0; font-size: 1.05rem; font-weight: 700; }
+        .post-lock-input {
+          width: 100%; padding: 10px 12px;
+          color: var(--primary); background: var(--theme);
+          border: 1px solid var(--border); border-radius: 8px; font: inherit;
+        }
+        .post-lock-form-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+        .post-lock-error { min-height: 1.5em; margin: 0; color: #b42318; }
+        .post-lock-toc-placeholder { padding: 4px 0 0; }
+        .post-lock-toc-label {
+          margin: 0; font-size: 0.82rem; font-weight: 600;
+          letter-spacing: 0.04em; text-transform: uppercase;
+          color: var(--secondary); opacity: 0.45;
         }
       </style>
       <button class="post-ctrl-btn" type="button" data-ctrl-btn style="display:none" aria-label="切换锁定">
@@ -107,149 +141,6 @@
 
     {{- if $passwordHash }}
     <section class="post-lock" data-post-lock="{{ .RelPermalink | md5 }}" data-password-hash="{{ $passwordHash }}" data-lock-admin-hash="{{ $lockAdminHash }}" aria-label="文章锁定">
-      <style>
-        body.has-post-lock {
-          overflow: auto;
-        }
-        body.has-post-lock .post-single {
-          display: flex;
-          flex-direction: column;
-        }
-        body.has-post-lock .post-header {
-          padding-bottom: 0;
-          border-bottom: none;
-        }
-        .post-lock {
-          flex: 1;
-          margin: 0;
-        }
-        .post-lock[hidden],
-        .post-lock [hidden] {
-          display: none !important;
-        }
-        .post-lock-overlay {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          min-height: 280px;
-          padding: 48px 0 64px;
-        }
-        .post-lock-icon {
-          display: block;
-          margin: 0 auto 20px;
-          color: var(--secondary);
-          opacity: 0.5;
-        }
-        .post-lock-panel {
-          width: min(400px, 100%);
-          padding: 28px 28px 24px;
-          color: var(--primary);
-          background: var(--entry);
-          border: 1px solid var(--border);
-          border-radius: 12px;
-          box-shadow: 0 4px 24px rgb(0 0 0 / 14%);
-          text-align: center;
-        }
-        .post-lock-title {
-          margin: 0 0 8px;
-          font-size: 1.05rem;
-          font-weight: 700;
-        }
-        .post-lock-description {
-          margin: 0 0 20px;
-          color: var(--secondary);
-          line-height: 1.65;
-          font-size: 0.88rem;
-        }
-        .post-lock-button,
-        .post-lock-secondary {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          min-height: 40px;
-          padding: 8px 20px;
-          border-radius: 8px;
-          font: inherit;
-          font-weight: 600;
-          cursor: pointer;
-          transition: opacity 0.15s;
-        }
-        .post-lock-button:hover,
-        .post-lock-secondary:hover {
-          opacity: 0.8;
-        }
-        .post-lock-button {
-          color: var(--theme);
-          background: var(--primary);
-          border: 1px solid var(--primary);
-        }
-        .post-lock-secondary {
-          color: var(--primary);
-          background: var(--theme);
-          border: 1px solid var(--border);
-        }
-        .post-lock-toolbar {
-          display: flex;
-          justify-content: flex-end;
-          margin: 0 0 18px;
-        }
-        .post-lock-dialog {
-          width: min(420px, calc(100vw - 32px));
-          padding: 0;
-          color: var(--primary);
-          background: var(--entry);
-          border: 1px solid var(--border);
-          border-radius: 8px;
-          box-shadow: 0 24px 70px rgb(0 0 0 / 28%);
-        }
-        .post-lock-dialog::backdrop {
-          background: rgb(0 0 0 / 42%);
-          backdrop-filter: blur(4px);
-        }
-        .post-lock-form {
-          display: grid;
-          gap: 14px;
-          padding: 22px;
-        }
-        .post-lock-form-title {
-          margin: 0;
-          font-size: 1.05rem;
-          font-weight: 700;
-        }
-        .post-lock-input {
-          width: 100%;
-          padding: 10px 12px;
-          color: var(--primary);
-          background: var(--theme);
-          border: 1px solid var(--border);
-          border-radius: 8px;
-          font: inherit;
-        }
-        .post-lock-form-actions {
-          display: flex;
-          gap: 10px;
-          justify-content: flex-end;
-          flex-wrap: wrap;
-        }
-        .post-lock-error {
-          min-height: 1.5em;
-          margin: 0;
-          color: #b42318;
-        }
-        .post-lock-toc-placeholder {
-          padding: 4px 0 0;
-        }
-        .post-lock-toc-label {
-          margin: 0;
-          font-size: 0.82rem;
-          font-weight: 600;
-          letter-spacing: 0.04em;
-          text-transform: uppercase;
-          color: var(--secondary);
-          opacity: 0.45;
-        }
-      </style>
       <div class="post-lock-overlay" data-lock-overlay>
         <div class="post-lock-panel">
           <svg class="post-lock-icon" xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -293,13 +184,6 @@
 
     {{- if not $passwordHash }}
     <div class="post-client-lock" data-client-lock hidden>
-      <style>
-        body.has-client-lock { overflow: auto; }
-        body.has-client-lock .post-single { display: flex; flex-direction: column; }
-        body.has-client-lock .post-header { padding-bottom: 0; border-bottom: none; }
-        .post-client-lock { flex: 1; margin: 0; }
-        .post-client-lock[hidden] { display: none !important; }
-      </style>
       <div class="post-lock-overlay">
         <div class="post-lock-panel">
           <svg class="post-lock-icon" xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
